@@ -1,0 +1,5 @@
+# We're probably not allowed to modify those binaries
+# in any way... Including stripping
+addFilter("E: unstripped-binary-or-object")
+addFilter("E: hardcoded-library-path")
+addFilter("E: external-depfilter-with-internal-depgen")

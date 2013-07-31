@@ -1,0 +1,10 @@
+--- kernel/dkms.conf.uniq~	2013-07-30 22:16:44.461424132 +0200
++++ kernel/dkms.conf	2013-07-30 22:20:10.687845947 +0200
+@@ -2,6 +2,7 @@ PACKAGE_NAME="nvidia"
+ PACKAGE_VERSION="304.88"
+ BUILT_MODULE_NAME[0]="$PACKAGE_NAME"
+ DEST_MODULE_LOCATION[0]="/kernel/drivers/video"
++DEST_MODULE_NAME[0]="nvidia-current"
+ MAKE[0]="make module KERNEL_UNAME=${kernelver}"
+ CLEAN="make clean"
+ AUTOINSTALL="yes"
