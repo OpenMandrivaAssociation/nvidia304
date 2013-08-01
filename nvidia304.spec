@@ -1,5 +1,16 @@
 # I love OpenSource :-(
 
+## NOTE: When modifying this .spec, you do not necessarily need to care about
+##       the %simple stuff. It is fine to break them, I'll fix it when I need them :)
+## - Anssi
+
+# %simple mode can be used to transform an arbitrary nvidia installer
+# package to rpms, similar to %atibuild mode in fglrx.
+# Macros version, rel, nsource, pkgname, distsuffix should be manually defined.
+%define simple          0
+%{?_without_simple: %global simple 0}
+%{?_with_simple: %global simple 1}
+
 # the highest supported videodrv abi
 %define videodrv_abi	12
 
@@ -13,7 +24,7 @@
 
 # For now, backportability is kept for 2006.0 / CS4 forwards.
 
-%define drivername		nvidia173
+%define drivername		nvidia304
 %define driverpkgname		x11-driver-video-%{drivername}
 %define modulename		%{drivername}
 %define cards			GeForce 6/7 based cards
@@ -203,21 +214,22 @@ is to be used with the %{driverpkgname} package.
 Summary:	NVIDIA XvMC/OpenGL/CUDA development headers (%{drivername})
 Group:		Development/C
 Requires:	%{driverpkgname} = %{version}-%{release}
-Requires:       %{drivername}-cuda = %{version}-%{release}
+Requires:       %{drivername}-cuda-opencl = %{version}-%{release}
 
 %description -n %{drivername}-devel
 NVIDIA XvMC static development library and OpenGL headers for
 %cards. This package is not required for
 normal use.
 
-%package -n %{drivername}-cuda
-Summary:	CUDA libraries for NVIDIA proprietary driver (%{drivername})
+%package -n %{drivername}-cuda-opencl
+Summary:	CUDA and OpenCL libraries for NVIDIA proprietary driver (%{drivername})
 Group:		System/Kernel and hardware
 Requires:	%{driverpkgname} = %{version}-%{release}
-Conflicts:	%{driverpkgname} < 173.14.25-2
+Conflicts:	%{driverpkgname} < 304.14.25-2
 
-%description -n %{drivername}-cuda
-Cuda library for NVIDIA proprietary driver for %cards.
+%description -n %{drivername}-cuda-opencl
+Cuda and OpenCL libraries for NVIDIA proprietary driver 
+for %cards.  
 This package is not required for normal use, it provides libraries to
 use NVIDIA cards for High Performance Computing (HPC).
 
@@ -886,12 +898,12 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 
 %doc README.install.urpmi README.manual-setup
-%doc %{pkgname}/usr/share/doc/*
-%doc %{pkgname}/LICENSE
+
+%if "%{ldetect_cards_name}" != ""
+%{_datadir}/ldetect-lst/pcitable.d/40%{drivername}.lst.gz
+%endif
 
 # ld.so.conf, modprobe.conf, xvmcconfig, xinit
-%if %{mdkversion} >= 200710
-# 2007.1+
 %ghost %{_sysconfdir}/ld.so.conf.d/GL.conf
 %ghost %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
 %ghost %{_sysconfdir}/modprobe.d/display-driver.conf
@@ -906,131 +918,108 @@ rm -rf %{buildroot}
 %{_sysconfdir}/%{drivername}/ld.so.conf
 %{_sysconfdir}/%{drivername}/XvMCConfig
 %{_sysconfdir}/%{drivername}/nvidia-settings.xinit
-%else
-%if %{mdkversion} >= 200700
-# 2007.0
-%ghost %{_sysconfdir}/ld.so.conf.d/GL.conf
-%ghost %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
-%dir %{_sysconfdir}/ld.so.conf.d/GL
-%dir %{_sysconfdir}/%{drivername}
-%{_sysconfdir}/ld.so.conf.d/GL/%{drivername}.conf
-%{_sysconfdir}/%{drivername}/XvMCConfig
-%{_sysconfdir}/%{drivername}/nvidia-settings.xinit
-%else
-# 2006.0
-%config(noreplace) %{_sysconfdir}/X11/XvMCConfig
-%config(noreplace) %{_sysconfdir}/ld.so.conf.d/%{drivername}.conf
-%{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
-%endif
+%if !%simple
+%{_sysconfdir}/%{drivername}/nvidia.icd
 %endif
 
-%if %{mdkversion} >= 200700
+%dir %{_sysconfdir}/OpenCL
+%dir %{_sysconfdir}/OpenCL/vendors
+%ghost %{_sysconfdir}/OpenCL/vendors/nvidia.icd
+
 %ghost %{_bindir}/nvidia-settings
 %ghost %{_bindir}/nvidia-smi
+%ghost %{_bindir}/nvidia-debugdump
 %ghost %{_bindir}/nvidia-xconfig
 %ghost %{_bindir}/nvidia-bug-report.sh
 %dir %{nvidia_bindir}
-%endif
 %{nvidia_bindir}/nvidia-settings
 %{nvidia_bindir}/nvidia-smi
+%{nvidia_bindir}/nvidia-debugdump
 %{nvidia_bindir}/nvidia-xconfig
 %{nvidia_bindir}/nvidia-bug-report.sh
 
-%if %{mdkversion} >= 200700
 %ghost %{_mandir}/man1/nvidia-xconfig.1%{_extension}
 %ghost %{_mandir}/man1/nvidia-settings.1%{_extension}
+%ghost %{_mandir}/man1/nvidia-smi.1%{_extension}
 %{_mandir}/man1/alt-%{drivername}-xconfig.1*
 %{_mandir}/man1/alt-%{drivername}-settings.1*
-%else
-%{_mandir}/man1/nvidia-xconfig.1*
-%{_mandir}/man1/nvidia-settings.1*
-%endif
+%{_mandir}/man1/alt-%{drivername}-smi.1*
 
-%if %{mdkversion} >= 200700
 %ghost %{_datadir}/applications/mandriva-nvidia-settings.desktop
 %dir %{nvidia_deskdir}
-%else
-%{_menudir}/%{driverpkgname}
-%endif
 %{nvidia_deskdir}/mandriva-nvidia-settings.desktop
 
-%{_miconsdir}/%{drivername}-settings.png
-%{_iconsdir}/%{drivername}-settings.png
-%{_liconsdir}/%{drivername}-settings.png
+%if !%simple
+%{_iconsdir}/hicolor/16x16/apps/%{drivername}-settings.png
+%{_iconsdir}/hicolor/32x32/apps/%{drivername}-settings.png
+%endif
+%{_iconsdir}/hicolor/48x48/apps/%{drivername}-settings.png
 
 %dir %{nvidia_libdir}
 %dir %{nvidia_libdir}/tls
+%dir %{nvidia_libdir}/vdpau
 %{nvidia_libdir}/libGL.so.1
 %{nvidia_libdir}/libGL.so.%{version}
-%{nvidia_libdir}/libGLcore.so.1
-%{nvidia_libdir}/libGLcore.so.%{version}
+%{nvidia_libdir}/libnvidia-glcore.so.%{version}
 %{nvidia_libdir}/libXvMCNVIDIA_dynamic.so.1
 %{nvidia_libdir}/libXvMCNVIDIA.so.%{version}
 %{nvidia_libdir}/libnvidia-cfg.so.1
 %{nvidia_libdir}/libnvidia-cfg.so.%{version}
-%{nvidia_libdir}/libnvidia-tls.so.1
 %{nvidia_libdir}/libnvidia-tls.so.%{version}
-%{nvidia_libdir}/tls/libnvidia-tls.so.1
+%{nvidia_libdir}/libnvidia-ml.so.1
+%{nvidia_libdir}/libnvidia-ml.so.%{version}
 %{nvidia_libdir}/tls/libnvidia-tls.so.%{version}
+%{nvidia_libdir}/vdpau/libvdpau_nvidia.so.%{version}
 %ifarch %{biarches}
 %dir %{nvidia_libdir32}
 %dir %{nvidia_libdir32}/tls
+%dir %{nvidia_libdir32}/vdpau
 %{nvidia_libdir32}/libGL.so.1
 %{nvidia_libdir32}/libGL.so.%{version}
-%{nvidia_libdir32}/libGLcore.so.1
-%{nvidia_libdir32}/libGLcore.so.%{version}
-%{nvidia_libdir32}/libnvidia-tls.so.1
+%{nvidia_libdir32}/libnvidia-glcore.so.%{version}
 %{nvidia_libdir32}/libnvidia-tls.so.%{version}
-%{nvidia_libdir32}/tls/libnvidia-tls.so.1
 %{nvidia_libdir32}/tls/libnvidia-tls.so.%{version}
+%{nvidia_libdir32}/libnvidia-ml.so.1
+%{nvidia_libdir32}/libnvidia-ml.so.%{version}
+%{nvidia_libdir32}/vdpau/libvdpau_nvidia.so.%{version}
 %endif
 
-%if %{mdkversion} >= 200910
-# 2009.1+ (/usr/lib/drivername/xorg)
+%ghost %{_libdir}/vdpau/libvdpau_nvidia.so.1
+%ifarch %{biarches}
+# avoid unowned directory
+%dir %{_prefix}/lib/vdpau
+%ghost %{_prefix}/lib/vdpau/libvdpau_nvidia.so.1
+%endif
+
 %dir %{nvidia_modulesdir}
 %{nvidia_modulesdir}/libnvidia-wfb.so.1
-%endif
-
-%if %{mdkversion} >= 200700 && %{mdkversion} <= 200900
-# 2007.0 - 2009.0
-%ghost %{xorg_libdir}/modules/libnvidia-wfb.so.1
-%if %{mdkversion} <= 200800
-# 2007.0 - 2008.0
-%ghost %{xorg_libdir}/modules/libwfb.so
-%endif
-%endif
-%if %{mdkversion} <= 200600
-# - 2006.0
-%{xorg_libdir}/modules/libwfb.so
-%{xorg_libdir}/modules/libnvidia-wfb.so.1
-%endif
 
 %{nvidia_modulesdir}/libnvidia-wfb.so.%{version}
 
-%if %{mdkversion} <= 200900
-%dir %{nvidia_extensionsdir}
-%endif
 %{nvidia_extensionsdir}/libglx.so.%{version}
 %{nvidia_extensionsdir}/libglx.so
-%if %{mdkversion} >= 200800 && %{mdkversion} <= 200900
-%ghost %{xorg_libdir}/modules/extensions/libglx.so
-%endif
 
-%if %{mdkversion} >= 200700 && %{mdkversion} <= 200910
-%dir %{nvidia_driversdir}
-%ghost %{xorg_libdir}/modules/drivers/nvidia_drv.so
-%endif
 %{nvidia_driversdir}/nvidia_drv.so
 
 %files -n %{drivername}-devel
 %defattr(-,root,root)
 %{_includedir}/%{drivername}
 %{nvidia_libdir}/libXvMCNVIDIA.a
+%{nvidia_libdir}/libXvMCNVIDIA_dynamic.so
 %{nvidia_libdir}/libGL.so
 %{nvidia_libdir}/libcuda.so
+%{nvidia_libdir}/libnvcuvid.so
 %{nvidia_libdir}/libnvidia-cfg.so
+%{nvidia_libdir}/libnvidia-ml.so
+%{nvidia_libdir}/libOpenCL.so
+%{nvidia_libdir}/libvdpau_nvidia.so
+
 %ifarch %{biarches}
 %{nvidia_libdir32}/libGL.so
+%{nvidia_libdir32}/libcuda.so
+%{nvidia_libdir32}/libnvidia-ml.so
+%{nvidia_libdir32}/libOpenCL.so
+%{nvidia_libdir32}/libvdpau_nvidia.so
 %endif
 
 %files -n dkms-%{drivername}
@@ -1042,6 +1031,28 @@ rm -rf %{buildroot}
 %defattr(-,root,root)
 %doc html-doc/*
 
-%files -n %{drivername}-cuda
-%{nvidia_libdir}/libcuda.so.1
+%files -n %{drivername}-cuda-opencl -f %pkgname/nvidia-cuda.files
+%defattr(-,root,root)
+%if !%simple
+%{nvidia_libdir}/libOpenCL.so.1.0.0
+%{nvidia_libdir}/libOpenCL.so.1.0
+%{nvidia_libdir}/libOpenCL.so.1
+%{nvidia_libdir}/libnvidia-compiler.so.%{version}
 %{nvidia_libdir}/libcuda.so.%{version}
+%{nvidia_libdir}/libcuda.so.1
+%{nvidia_libdir}/libnvidia-opencl.so.%{version}
+%{nvidia_libdir}/libnvidia-opencl.so.1
+%{nvidia_libdir}/libnvcuvid.so.%{version}
+%{nvidia_libdir}/libnvcuvid.so.1
+%ifarch %{biarches}
+%{nvidia_libdir32}/libOpenCL.so.1.0.0
+%{nvidia_libdir32}/libOpenCL.so.1.0
+%{nvidia_libdir32}/libOpenCL.so.1
+%{nvidia_libdir32}/libnvidia-compiler.so.%{version}
+%{nvidia_libdir32}/libnvidia-opencl.so.%{version}
+%{nvidia_libdir32}/libnvidia-opencl.so.1
+%{nvidia_libdir32}/libcuda.so.%{version}
+%{nvidia_libdir32}/libcuda.so.1
+%endif
+%endif
+
