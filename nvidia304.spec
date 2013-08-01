@@ -8,8 +8,8 @@
 # pkg0: plain archive
 # pkg1: + precompiled modules
 # pkg2: + 32bit compatibility libraries
-%define pkgname32	NVIDIA-Linux-x86-%{version}-pkg0
-%define pkgname64	NVIDIA-Linux-x86_64-%{version}-pkg2
+%define pkgname32	NVIDIA-Linux-x86-%{version}
+%define pkgname64	NVIDIA-Linux-x86_64-%{version}
 
 # For now, backportability is kept for 2006.0 / CS4 forwards.
 
@@ -120,7 +120,7 @@ Source100: nvidia304.rpmlintrc
 Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3: nvidia-settings-include-xf86vmproto.patch
-Patch4: nvidia-long-lived-304.32-dkms.conf-unique-module-name.patch
+Patch4: nvidia-long-lived-304.88-dkms.conf-unique-module-name.patch
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
 Group: 		System/Kernel and hardware
