@@ -1,5 +1,5 @@
 sources:
   NVIDIA-Linux-x86-304.88.run: 94104b3ce0d537667a551bd1d41c8990404693fb
   NVIDIA-Linux-x86_64-304.88.run: 98c84dab0cfcf7c86c93e0c30c9900b360caaddb
-  nvidia-settings-304.88.tar.gz: 6f70ee25e3facc2f91497db3defd9f6d9e2d31dd
-  nvidia-xconfig-304.88.tar.gz: 6fecdc1e98ad3d54ff273827cee5770c25236c22
+  nvidia-settings-304.88.tar.bz2: 6f70ee25e3facc2f91497db3defd9f6d9e2d31dd
+  nvidia-xconfig-304.88.tar.bz2: 6fecdc1e98ad3d54ff273827cee5770c25236c22
