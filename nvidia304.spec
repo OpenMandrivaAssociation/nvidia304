@@ -42,6 +42,11 @@
 %define ld_so_conf_dir		%{_sysconfdir}/%{drivername}
 %define ld_so_conf_file		ld.so.conf
 
+# The entry in Cards+ this driver should be associated with, if there is
+# no entry in ldetect-lst default pcitable:
+# cooker ldetect-lst should be up-to-date
+%define ldetect_cards_name %nil
+
 %if %{mdkversion} <= 200910
 %define nvidia_driversdir	%{xorg_libdir}/modules/drivers/%{drivername}
 %endif
@@ -131,6 +136,8 @@ Source100: nvidia304.rpmlintrc
 Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3: nvidia-settings-include-xf86vmproto.patch
+Patch4:	nvidia-long-lived-304.88-dkms.conf-unique-module-name.patch
+
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
 Group: 		System/Kernel and hardware
@@ -250,6 +257,12 @@ cd nvidia-settings-%{version}
 %patch3 -p1
 cd ..
 sh %{nsource} --extract-only
+
+%if !%simple
+cd %{pkgname}
+%patch4 -p0 -b .uniq~
+cd ..
+%endif
 
 rm -rf %{pkgname}/usr/src/nv/precompiled
 
