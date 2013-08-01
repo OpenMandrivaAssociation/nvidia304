@@ -120,7 +120,6 @@ Source100: nvidia304.rpmlintrc
 Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3: nvidia-settings-include-xf86vmproto.patch
-Patch4: nvidia-long-lived-304.88-dkms.conf-unique-module-name.patch
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
 Group: 		System/Kernel and hardware
@@ -240,16 +239,7 @@ cd nvidia-settings-%{version}
 cd ..
 sh %{nsource} --extract-only
 
-cd %{pkgname}
-%patch4 -p0 -b .uniq~
-cd ..
-
 rm -rf %{pkgname}/usr/src/nv/precompiled
-
-# Now works properly on xen, as reported by guillomovitch, so remove the xen
-# check:
-perl -pi -e 's/^module:(.*) xen-sanity-check (.*)$/module:$1 $2/' \
-    %{pkgname}/usr/src/nv/Makefile.kbuild
 
 cat > README.install.urpmi <<EOF
 This driver is for %cards.
@@ -290,107 +280,39 @@ installation in the file 'README.install.urpmi' in this directory.
 %endif
 EOF
 
-mv %{pkgname}/usr/share/doc/html html-doc
+mv %{pkgname}/html html-doc
 
 # It wants to link Xxf86vm statically (presumably because it is somewhat more
 # rare than the other dependencies)
-sed -i 's|-Wl,-Bstatic||' nvidia-settings-1.0/Makefile
-sed -i 's|-O ||' nvidia-settings-1.0/Makefile
-sed -i 's|-O ||' nvidia-xconfig-1.0/Makefile
-rm nvidia-settings-1.0/src/*/*.a
+sed -i 's|-Wl,-Bstatic||' nvidia-settings-%{version}/Makefile
+sed -i 's|-O ||' nvidia-settings-%{version}/Makefile
+sed -i 's|-O ||' nvidia-xconfig-%{version}/Makefile
+rm nvidia-settings-%{version}/src/*/*.a
 
 %build
-mkdir -p bfd
-ln -sf $(which ld.bfd) bfd/ld
-export PATH="$PWD/bfd:$PATH"
 
-cd nvidia-settings-1.0
-%make CFLAGS="%optflags" LDFLAGS="%{?ldflags}"
-cd ../nvidia-xconfig-1.0
-%make CFLAGS="%optflags %{?ldflags} -IXF86Config-parser"
+%if %mdkversion >= 201000
+%setup_compile_flags
+%else
+export CFLAGS="%{optflags}"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="%{?ldflags}"
+%endif
+
+%make -C nvidia-settings-%{version}/src/libXNVCtrl
+%make -C nvidia-settings-%{version} STRIP_CMD=true
+%make -C nvidia-xconfig-%{version} STRIP_CMD=true
 
 %install
 rm -rf %{buildroot}
-cd %{pkgname}/usr
+cd %{pkgname}
 
 # dkms
 install -d -m755 %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}
-install -m644 src/nv/* %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}
-chmod 0755 %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/conftest.sh
-
-#install -d -m755 %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/patches
-#install -m644 %{SOURCE2} %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/patches
-# -p1 for dkms:
-#sed -i 's,usr/src/nv,nv,g' %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/patches/*.diff.txt
-
-cat > %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/dkms.conf <<EOF
-PACKAGE_NAME="%{drivername}"
-PACKAGE_VERSION="%{version}-%{release}"
-BUILT_MODULE_NAME[0]="nvidia"
-DEST_MODULE_LOCATION[0]="/kernel/drivers/char/drm"
-%if %{mdkversion} >= 200710
-DEST_MODULE_NAME[0]="%{modulename}"
-%endif
-MAKE[0]="make SYSSRC=\${kernel_source_dir} module"
-CLEAN="make -f Makefile.kbuild clean"
-AUTOINSTALL="yes"
-EOF
-
-# OpenGL and CUDA headers
-install -d -m755	%{buildroot}%{_includedir}/%{drivername}
-cp -a include/*		%{buildroot}%{_includedir}/%{drivername}
-
-# install binaries
-install -d -m755	%{buildroot}%{nvidia_bindir}
-install -m755 bin/*	%{buildroot}%{nvidia_bindir}
-rm %{buildroot}%{nvidia_bindir}/{makeself.sh,mkprecompiled,tls_test,tls_test_dso.so}
-install -m755 ../../nvidia-settings-1.0/nvidia-settings %{buildroot}%{nvidia_bindir}
-install -m755 ../../nvidia-xconfig-1.0/nvidia-xconfig %{buildroot}%{nvidia_bindir}
-%if %{mdkversion} >= 200700
-install -d -m755			%{buildroot}%{_bindir}
-touch					%{buildroot}%{_bindir}/nvidia-settings
-touch					%{buildroot}%{_bindir}/nvidia-smi
-touch					%{buildroot}%{_bindir}/nvidia-xconfig
-touch					%{buildroot}%{_bindir}/nvidia-bug-report.sh
-# rpmlint:
-chmod 0755				%{buildroot}%{_bindir}/*
-%endif
-
-# install man pages
-install -d -m755		%{buildroot}%{_mandir}/man1
-install -m644 share/man/man1/*	%{buildroot}%{_mandir}/man1
-rm %{buildroot}%{_mandir}/man1/nvidia-installer.1*
-rm %{buildroot}%{_mandir}/man1/nvidia-settings.1*
-rm %{buildroot}%{_mandir}/man1/nvidia-xconfig.1*
-install -m755 ../../nvidia-settings-1.0/doc/nvidia-settings.1 %{buildroot}%{_mandir}/man1
-install -m755 ../../nvidia-xconfig-1.0/nvidia-xconfig.1 %{buildroot}%{_mandir}/man1
-# bug #41638 - whatis entries of nvidia man pages appear wrong
-gunzip %{buildroot}%{_mandir}/man1/*.gz || :
-sed -r -i '/^nvidia\\-[a-z]+ \\- NVIDIA/s,^nvidia\\-,nvidia-,' %{buildroot}%{_mandir}/man1/*.1
-%if %{mdkversion} >= 200700
-cd %{buildroot}%{_mandir}/man1
-rename nvidia alt-%{drivername} *
-cd -
-touch %{buildroot}%{_mandir}/man1/nvidia-xconfig.1%{_extension}
-touch %{buildroot}%{_mandir}/man1/nvidia-settings.1%{_extension}
-%endif
 
 # menu entry
-%if %{mdkversion} <= 200600
-install -d -m755 %{buildroot}/%{_menudir}
-cat <<EOF >%{buildroot}/%{_menudir}/%{driverpkgname}
-?package(%{driverpkgname}):command="%{nvidia_bindir}/nvidia-settings" \
-                  icon=%{drivername}-settings.png \
-                  needs="x11" \
-                  section="System/Configuration/Hardware" \
-                  title="NVIDIA Display Settings" \
-                  longtitle="Configure NVIDIA X driver" \
-                  xdg="true"
-EOF
-%endif
-
-install -d -m755 %{buildroot}%{nvidia_deskdir}
-cat > %{buildroot}%{nvidia_deskdir}/mandriva-nvidia-settings.desktop <<EOF
+install -d -m755 %{buildroot}%{_datadir}/%{drivername}
+cat > %{buildroot}%{_datadir}/%{drivername}/mandriva-nvidia-settings.desktop <<EOF
 [Desktop Entry]
 Name=NVIDIA Display Settings
 Comment=Configure NVIDIA X driver
@@ -401,99 +323,416 @@ Type=Application
 Categories=GTK;Settings;HardwareSettings;X-MandrivaLinux-System-Configuration;
 EOF
 
-install -d -m755	%{buildroot}%{_datadir}/applications
-touch			%{buildroot}%{_datadir}/applications/mandriva-nvidia-settings.desktop
+install -d -m755 %{buildroot}%{_datadir}/applications
+touch %{buildroot}%{_datadir}/applications/mandriva-nvidia-settings.desktop
 
 # icons
-install -d -m755 %{buildroot}/%{_miconsdir} %{buildroot}/%{_iconsdir} %{buildroot}/%{_liconsdir}
-convert share/pixmaps/nvidia-settings.png -resize 16x16 %{buildroot}/%{_miconsdir}/%{drivername}-settings.png
-convert share/pixmaps/nvidia-settings.png -resize 32x32 %{buildroot}/%{_iconsdir}/%{drivername}-settings.png
-convert share/pixmaps/nvidia-settings.png -resize 48x48 %{buildroot}/%{_liconsdir}/%{drivername}-settings.png
-
-# install libraries
-install -d -m755						%{buildroot}%{nvidia_libdir}/tls
-install -m755 lib/tls/*						%{buildroot}%{nvidia_libdir}/tls
-install -m755 lib/*.*						%{buildroot}%{nvidia_libdir}
-install -m755 X11R6/lib/*.*					%{buildroot}%{nvidia_libdir}
-rm								%{buildroot}%{nvidia_libdir}/*.la
-/sbin/ldconfig -n						%{buildroot}%{nvidia_libdir}
-%ifarch %{biarches}
-install -d -m755						%{buildroot}%{nvidia_libdir32}/tls
-install -m755 lib32/tls/*					%{buildroot}%{nvidia_libdir32}/tls
-install -m755 lib32/*.*						%{buildroot}%{nvidia_libdir32}
-rm								%{buildroot}%{nvidia_libdir32}/*.la
-/sbin/ldconfig -n						%{buildroot}%{nvidia_libdir32}
+install -d -m755 %{buildroot}%{_iconsdir}/hicolor/{16x16,32x32,48x48}/apps
+%if !%simple
+convert nvidia-settings.png -resize 16x16 %{buildroot}%{_iconsdir}/hicolor/16x16/apps/%{drivername}-settings.png
+convert nvidia-settings.png -resize 32x32 %{buildroot}%{_iconsdir}/hicolor/32x32/apps/%{drivername}-settings.png
+convert nvidia-settings.png -resize 48x48 %{buildroot}%{_iconsdir}/hicolor/48x48/apps/%{drivername}-settings.png
+%else
+# no imagemagick
+[ -e nvidia-settings.png ] || cp -a usr/share/pixmaps/nvidia-settings.png .
+install -m644 nvidia-settings.png %{buildroot}%{_iconsdir}/hicolor/48x48/apps/%{drivername}-settings.png
 %endif
 
-# create devel symlinks
-for file in %{buildroot}%{nvidia_libdir}/*.so.*.* \
-%ifarch %{biarches}
-	%{buildroot}%{nvidia_libdir32}/*.so.*.* \
+error_fatal() {
+echo "Error: $@." >&2
+exit 1
+}
+
+error_unhandled() {
+echo "Warning: $@." >&2
+echo "Warning: $@." >> warns.log
+%if !%simple
+# cause distro builds to fail in case of unhandled files
+exit 1
 %endif
-; do
-	symlink=${file%%.so*}.so
-	[ -e $symlink ] && continue
-	# only provide symlinks that the installer does; plus cuda
-	grep -q "^$(basename $symlink) " ../.manifest || [ "$(basename $symlink)" = "libcuda.so" ] || continue
-	ln -s $(basename $file) $symlink
+}
+
+parseparams() {
+for value in $rest; do
+local param=$1
+[ -n "$param" ] || error_fatal "unhandled parameter $value"
+shift
+eval $param=$value
+
+[ -n "$value" ] || error_fatal "empty $param"
+
+# resolve libdir based on $arch
+if [ "$param" = "arch" ]; then
+case "$arch" in
+NATIVE) nvidia_libdir=%{nvidia_libdir};;
+COMPAT32) nvidia_libdir=%{nvidia_libdir32};;
+*) error_fatal "unknown arch $arch"
+esac
+fi
+done
+}
+
+add_to_list() {
+%if !%simple
+# on distro builds, only use .manifest for %doc files
+[ "${2#%doc}" = "${2}" ] && return
+%endif
+local list="$1.files"
+local entry="$2"
+echo $entry >> $list
+}
+
+install_symlink() {
+local pkg="$1"
+local dir="$2"
+mkdir -p %{buildroot}$dir
+ln -s $dest %{buildroot}$dir/$file
+add_to_list $pkg $dir/$file
+}
+
+install_lib_symlink() {
+local pkg="$1"
+local dir="$2"
+case "$file" in
+libvdpau_*.so)
+# vdpau drivers => not put into -devel
+;;
+*.so)
+pkg=nvidia-devel;;
+esac
+install_symlink $pkg $dir
+}
+
+install_file_only() {
+local pkg="$1"
+local dir="$2"
+mkdir -p %{buildroot}$dir
+# replace 0444 with more usual 0644
+[ "$perms" = "0444" ] && perms="0644"
+install -m $perms $file %{buildroot}$dir
+}
+
+install_file() {
+local pkg="$1"
+local dir="$2"
+install_file_only $pkg $dir
+add_to_list $pkg $dir/$(basename $file)
+}
+
+get_module_dir() {
+local subdir="$1"
+case "$subdir" in
+extensions*) echo %{nvidia_extensionsdir};;
+drivers/) echo %{nvidia_driversdir};;
+/) echo %{nvidia_modulesdir};;
+*) error_unhandled "unhandled module subdir $subdir"
+echo %{nvidia_modulesdir};;
+esac
+}
+
+for file in nvidia.files nvidia-devel.files nvidia-cuda.files nvidia-dkms.files nvidia-html.files; do
+rm -f $file
+touch $file
 done
 
-# install X.org files
-install -d -m755				%{buildroot}%{nvidia_modulesdir}
-install -m755 X11R6/lib/modules/*.*		%{buildroot}%{nvidia_modulesdir}
-/sbin/ldconfig -n				%{buildroot}%{nvidia_modulesdir}
-%if %{mdkversion} <= 200800
-# provided by xorg server 1.4
-ln -s libnvidia-wfb.so.1			%{buildroot}%{nvidia_modulesdir}/libwfb.so
-%endif
-install -d -m755				%{buildroot}%{nvidia_extensionsdir}
-install -m755 X11R6/lib/modules/extensions/*	%{buildroot}%{nvidia_extensionsdir}
-ln -s libglx.so.%{version}			%{buildroot}%{nvidia_extensionsdir}/libglx.so
-install -d -m755				%{buildroot}%{nvidia_driversdir}
-install -m755 X11R6/lib/modules/drivers/*	%{buildroot}%{nvidia_driversdir}
+# install files according to .manifest
+cat .manifest | tail -n +9 | while read line; do
+rest=${line}
+file=${rest%%%% *}
+rest=${rest#* }
+perms=${rest%%%% *}
+rest=${rest#* }
+type=${rest%%%% *}
+rest=${rest#* }
 
-%if %{mdkversion} >= 200700 && %{mdkversion} <= 200910
-touch %{buildroot}%{xorg_libdir}/modules/drivers/nvidia_drv.so
+case "$type" in
+CUDA_LIB)
+parseparams arch subdir
+install_file nvidia-cuda $nvidia_libdir/$subdir
+;;
+CUDA_SYMLINK)
+parseparams arch subdir dest
+install_lib_symlink nvidia-cuda $nvidia_libdir/$subdir
+;;
+NVCUVID_LIB)
+parseparams arch
+install_file nvidia-cuda $nvidia_libdir
+;;
+NVCUVID_LIB_SYMLINK)
+parseparams arch dest
+install_lib_symlink nvidia-cuda $nvidia_libdir
+;;
+OPENGL_LIB)
+parseparams arch
+install_file nvidia $nvidia_libdir
+;;
+OPENGL_SYMLINK)
+parseparams arch dest
+install_lib_symlink nvidia $nvidia_libdir
+;;
+TLS_LIB)
+parseparams arch style subdir
+install_file nvidia $nvidia_libdir/$subdir
+;;
+TLS_SYMLINK)
+parseparams arch style subdir dest
+install_lib_symlink nvidia $nvidia_libdir/$subdir
+;;
+UTILITY_LIB)
+install_file nvidia %{nvidia_libdir}
+;;
+UTILITY_LIB_SYMLINK)
+parseparams dest
+install_lib_symlink nvidia %{nvidia_libdir}
+;;
+VDPAU_LIB)
+parseparams arch subdir
+%if %{mdkversion} >= 200900
+# on 2009.0+, only install libvdpau_nvidia.so
+case $file in *libvdpau_nvidia.so*);; *) continue; esac
 %endif
-%if %{mdkversion} >= 200800 && %{mdkversion} <= 200900
-touch %{buildroot}%{xorg_libdir}/modules/extensions/libglx.so
+install_file nvidia $nvidia_libdir/$subdir
+;;
+VDPAU_SYMLINK)
+parseparams arch subdir dest
+%if %{mdkversion} >= 200900
+# on 2009.0+, only install libvdpau_nvidia.so
+case $file in *libvdpau_nvidia.so*);; *) continue; esac
 %endif
+install_lib_symlink nvidia $nvidia_libdir/$subdir
+;;
+XLIB_STATIC_LIB)
+install_file nvidia-devel %{nvidia_libdir}
+;;
+XLIB_SHARED_LIB)
+install_file nvidia %{nvidia_libdir}
+;;
+XLIB_SYMLINK)
+parseparams dest
+install_lib_symlink nvidia %{nvidia_libdir}
+;;
+LIBGL_LA)
+# (Anssi) we don't install .la files
+;;
+XMODULE_SHARED_LIB|GLX_MODULE_SHARED_LIB)
+parseparams subdir
+install_file nvidia $(get_module_dir $subdir)
+;;
+XMODULE_NEWSYM)
+# symlink that is created only if it doesn't already
+# exist (i.e. as part of x11-server)
+case "$file" in
+libwfb.so)
+%if %{mdkversion} >= 200810
+# 2008.1+ has this one already
+continue
+%endif
+;;
+*)
+error_unhandled "unknown XMODULE_NEWSYM type file $file, skipped"
+continue
+esac
+parseparams subdir dest
+install_symlink nvidia $(get_module_dir $subdir)
+;;
+XMODULE_SYMLINK|GLX_MODULE_SYMLINK)
+parseparams subdir dest
+install_symlink nvidia $(get_module_dir $subdir)
+;;
+VDPAU_HEADER)
+%if %{mdkversion} >= 200900
+# already in vdpau-devel
+continue
+%endif
+parseparams subdir
+install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
+;;
+OPENGL_HEADER|CUDA_HEADER)
+parseparams subdir
+install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
+;;
+DOCUMENTATION)
+parseparams subdir
+case $subdir in
+*/html)
+add_to_list nvidia-html "%%doc %{pkgname}/$file"
+continue
+;;
+*/include/*)
+continue
+;;
+esac
+case $file in
+*XF86Config*|*nvidia-settings.png)
+continue;;
+esac
+add_to_list nvidia "%%doc %{pkgname}/$file"
+;;
+MANPAGE)
+parseparams subdir
+case "$file" in
+*nvidia-installer*)
+# not installed
+continue
+;;
+*nvidia-settings*|*nvidia-xconfig*|*nvidia-cuda*)
+%if !%simple
+# installed separately below
+continue
+%endif
+;;
+*nvidia-smi*)
+# ok
+;;
+*)
+error_unhandled "skipped unknown man page $(basename $file)"
+continue
+esac
+install_file_only nvidia %{_mandir}/$subdir
+;;
+UTILITY_BINARY)
+case "$file" in
+*nvidia-settings|*nvidia-xconfig|*nvidia-cuda*)
+%if !%simple
+# not installed, we install our own copy
+continue
+%endif
+;;
+*nvidia-smi|*nvidia-bug-report.sh|*nvidia-debugdump)
+# ok
+;;
+*)
+error_unhandled "unknown binary $(basename $file) will be installed to %{nvidia_bindir}/$(basename $file)"
+;;
+esac
+install_file nvidia %{nvidia_bindir}
+;;
+UTILITY_BIN_SYMLINK)
+case $file in nvidia-uninstall) continue;; esac
+parseparams dest
+install_symlink nvidia %{nvidia_bindir}
+;;
+INSTALLER_BINARY)
+# not installed
+;;
+KERNEL_MODULE_SRC)
+install_file nvidia-dkms %{_usrsrc}/%{drivername}-%{version}-%{release}
+;;
+CUDA_ICD)
+# in theory this should go to the cuda subpackage, but it goes into the main package
+# as this avoids one broken symlink and it is small enough to not cause space issues
+install_file nvidia %{_sysconfdir}/%{drivername}
+;;
+DOT_DESKTOP)
+# we provide our own for now
+;;
+*)
+error_unhandled "file $(basename $file) of unknown type $type will be skipped"
+esac
+done
+
+[ -z "$warnings" ] || echo "Please inform Anssi Hannula <anssi@mandriva.org> or http://qa.mandriva.com/ of the above warnings." >> warns.log
+
+%if %simple
+find %{buildroot}%{_libdir} %{buildroot}%{_prefix}/lib -type d | while read dir; do
+dir=${dir#%{buildroot}}
+echo "$dir" | grep -q nvidia && echo "%%dir $dir" >> nvidia.files
+done
+[ -d %{buildroot}%{_includedir}/%{drivername} ] && echo "%{_includedir}/%{drivername}" >> nvidia-devel.files
+%endif
+
+%if !%simple
+# confirm SONAME; if something else than libvdpau_nvidia.so or libvdpau_nvidia.so.1, adapt .spec as needed:
+[ "$(objdump -p %{buildroot}%{nvidia_libdir}/vdpau/libvdpau_nvidia.so.%{version} | grep SONAME | gawk '{ print $2 }')" = "libvdpau_nvidia.so.1" ]
+
+rm -f %{buildroot}%{nvidia_libdir}/vdpau/libvdpau_nvidia.so.1
+rm -f %{buildroot}%{nvidia_libdir32}/vdpau/libvdpau_nvidia.so.1
+%endif
+
+# vdpau alternative symlink
+install -d -m755 %{buildroot}%{_libdir}/vdpau
+touch %{buildroot}%{_libdir}/vdpau/libvdpau_nvidia.so.1
+%ifarch %{biarches}
+install -d -m755 %{buildroot}%{_prefix}/lib/vdpau
+touch %{buildroot}%{_prefix}/lib/vdpau/libvdpau_nvidia.so.1
+%endif
+
+%if !%simple
+# self-built binaries
+install -m755 ../nvidia-settings-%{version}/src/_out/*/nvidia-settings %{buildroot}%{nvidia_bindir}
+install -m755 ../nvidia-xconfig-%{version}/_out/*/nvidia-xconfig %{buildroot}%{nvidia_bindir}
+%endif
+# binary alternatives
+install -d -m755 %{buildroot}%{_bindir}
+touch %{buildroot}%{_bindir}/nvidia-settings
+touch %{buildroot}%{_bindir}/nvidia-smi
+touch %{buildroot}%{_bindir}/nvidia-debugdump
+touch %{buildroot}%{_bindir}/nvidia-xconfig
+touch %{buildroot}%{_bindir}/nvidia-bug-report.sh
+# rpmlint:
+chmod 0755 %{buildroot}%{_bindir}/*
+
+# old alternatives
+%if %{mdkversion} <= 200910
+touch %{buildroot}%{_libdir}/xorg/modules/drivers/nvidia_drv.so
+%endif
+%if %{mdkversion} <= 200900
+touch %{buildroot}%{_libdir}/xorg/modules/extensions/libglx.so
+%endif
+
+%if !%simple
+# install man pages
+install -m755 ../nvidia-settings-%{version}/doc/_out/*/nvidia-settings.1 %{buildroot}%{_mandir}/man1
+install -m755 ../nvidia-xconfig-%{version}/_out/*/nvidia-xconfig.1 %{buildroot}%{_mandir}/man1
+%endif
+# bug #41638 - whatis entries of nvidia man pages appear wrong
+gunzip %{buildroot}%{_mandir}/man1/*.gz
+sed -r -i '/^nvidia\\-[a-z]+ \\- NVIDIA/s,^nvidia\\-,nvidia-,' %{buildroot}%{_mandir}/man1/*.1
+cd %{buildroot}%{_mandir}/man1
+rename nvidia alt-%{drivername} *
+cd -
+touch %{buildroot}%{_mandir}/man1/nvidia-xconfig.1%{_extension}
+touch %{buildroot}%{_mandir}/man1/nvidia-settings.1%{_extension}
+touch %{buildroot}%{_mandir}/man1/nvidia-smi.1%{_extension}
+
+# cuda nvidia.icd
+install -d -m755 %{buildroot}%{_sysconfdir}/OpenCL/vendors
+touch %{buildroot}%{_sysconfdir}/OpenCL/vendors/nvidia.icd
+# override apparently wrong reference to the development symlink name:
+[ "$(cat %{buildroot}%{_sysconfdir}/%{drivername}/nvidia.icd)" = "libcuda.so" ] &&
+echo libcuda.so.1 > %{buildroot}%{_sysconfdir}/%{drivername}/nvidia.icd
 
 # ld.so.conf
-install -d -m755		%{buildroot}%{ld_so_conf_dir}
-echo "%{nvidia_libdir}" >	%{buildroot}%{ld_so_conf_dir}/%{ld_so_conf_file}
+install -d -m755 %{buildroot}%{_sysconfdir}/%{drivername}
+echo "%{nvidia_libdir}" > %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %ifarch %{biarches}
-echo "%{nvidia_libdir32}" >>	%{buildroot}%{ld_so_conf_dir}/%{ld_so_conf_file}
+echo "%{nvidia_libdir32}" >> %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %endif
-%if %{mdkversion} >= 200700
-install -d -m755		%{buildroot}%{_sysconfdir}/ld.so.conf.d
-touch				%{buildroot}%{_sysconfdir}/ld.so.conf.d/GL.conf
-%endif
+install -d -m755 %{buildroot}%{_sysconfdir}/ld.so.conf.d
+touch %{buildroot}%{_sysconfdir}/ld.so.conf.d/GL.conf
 
 # modprobe.conf
-%if %{mdkversion} >= 200710
-install -d -m755			%{buildroot}%{_sysconfdir}/modprobe.d
-touch					%{buildroot}%{_sysconfdir}/modprobe.d/display-driver.conf
+install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.d
+touch %{buildroot}%{_sysconfdir}/modprobe.d/display-driver.conf
 echo "install nvidia /sbin/modprobe %{modulename} \$CMDLINE_OPTS" > %{buildroot}%{_sysconfdir}/%{drivername}/modprobe.conf
-%endif
 
 %if %{mdkversion} < 201100
 # modprobe.preload.d
 # This is here because sometimes (one case reported by Christophe Fergeau on 04/2010)
 # starting X server fails if the driver module is not already loaded.
 # This is fixed by the reworked kms-dkms-plymouth-drakx-initrd system in 2011.0.
-install -d -m755			%{buildroot}%{_sysconfdir}/modprobe.preload.d
-touch					%{buildroot}%{_sysconfdir}/modprobe.preload.d/display-driver
-echo "%{modulename}"			>  %{buildroot}%{_sysconfdir}/%{drivername}/modprobe.preload
+install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.preload.d
+touch %{buildroot}%{_sysconfdir}/modprobe.preload.d/display-driver
+echo "%{modulename}" > %{buildroot}%{_sysconfdir}/%{drivername}/modprobe.preload
 %endif
 
 # XvMCConfig
-install -d -m755 %{buildroot}%{nvidia_xvmcconfdir}
-echo "libXvMCNVIDIA_dynamic.so.1" > %{buildroot}%{nvidia_xvmcconfdir}/XvMCConfig
+install -d -m755 %{buildroot}%{_sysconfdir}/%{drivername}
+echo "libXvMCNVIDIA_dynamic.so.1" > %{buildroot}%{_sysconfdir}/%{drivername}/XvMCConfig
 
 # xinit script
-install -d -m755 %{buildroot}%{nvidia_xinitdir}
-cat > %{buildroot}%{nvidia_xinitdir}/nvidia-settings.xinit <<EOF
+install -d -m755 %{buildroot}%{_sysconfdir}/%{drivername}
+cat > %{buildroot}%{_sysconfdir}/%{drivername}/nvidia-settings.xinit <<EOF
 # to be sourced
 #
 # Do not modify this file; the changes will be overwritten.
@@ -504,14 +743,38 @@ LOAD_NVIDIA_SETTINGS="yes"
 [ -f %{_sysconfdir}/sysconfig/nvidia-settings ] && . %{_sysconfdir}/sysconfig/nvidia-settings
 [ "\$LOAD_NVIDIA_SETTINGS" = "yes" ] && %{_bindir}/nvidia-settings --load-config-only
 EOF
-chmod 0755 %{buildroot}%{nvidia_xinitdir}/nvidia-settings.xinit
-%if %{mdkversion} >= 200700
+chmod 0755 %{buildroot}%{_sysconfdir}/%{drivername}/nvidia-settings.xinit
 install -d -m755 %{buildroot}%{_sysconfdir}/X11/xinit.d
 touch %{buildroot}%{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
+
+# install ldetect-lst pcitable files for backports
+# local version of merge2pcitable.pl:read_nvidia_readme:
+section=0
+set +x
+[ -e README.txt ] || cp -a usr/share/doc/README.txt .
+cat README.txt | while read line; do
+[ $section -gt 3 ] && break
+if [ $((section %% 2)) -eq 0 ]; then
+echo "$line" | grep -Pq "^\s*NVIDIA GPU product\s+Device PCI ID.*" && section=$((section+1))
+continue
+fi
+if echo "$line" | grep -Pq "^\s*$"; then
+section=$((section+1))
+continue
+fi
+echo "$line" | grep -Pq "^\s*-+[\s-]+$" && continue
+id=$(echo "$line" | sed -nre 's,^\s*.+?\s+0x(....).*$,\1,p' | tr '[:upper:]' '[:lower:]')
+echo "0x10de 0x$id \"Card:%{ldetect_cards_name}\""
+done | sort -u > pcitable.nvidia.lst
+set -x
+[ $(wc -l pcitable.nvidia.lst | cut -f1 -d" ") -gt 200 ]
+%if "%{ldetect_cards_name}" != ""
+install -d -m755 %{buildroot}%{_datadir}/ldetect-lst/pcitable.d
+gzip -c pcitable.nvidia.lst > %{buildroot}%{_datadir}/ldetect-lst/pcitable.d/40%{drivername}.lst.gz
 %endif
 
-# don't strip files
 export EXCLUDE_FROM_STRIP="$(find %{buildroot} -type f \! -name nvidia-settings \! -name nvidia-xconfig)"
+
 
 %post -n %{driverpkgname}
 %if %{mdkversion} >= 200710
