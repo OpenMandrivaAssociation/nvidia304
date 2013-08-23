@@ -27,7 +27,7 @@
 %define drivername		nvidia304
 %define driverpkgname		x11-driver-video-%{drivername}
 %define modulename		%{drivername}
-%define cards			GeForce 6xxx and GeForce 7xxx cards
+%define cards			GeForce 6/7 based cards
 %define xorg_libdir		%{_libdir}/xorg
 %define xorg_extra_modules	%{_libdir}/xorg/extra-modules
 %define nvidia_driversdir	%{_libdir}/%{drivername}/xorg
