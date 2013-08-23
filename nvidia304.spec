@@ -14,7 +14,7 @@
 # the highest supported videodrv abi
 %define videodrv_abi	12
 
-%define priority	9620
+%define priority	96300
 
 # pkg0: plain archive
 # pkg1: + precompiled modules
@@ -123,8 +123,8 @@
 
 Summary:	NVIDIA proprietary X.org driver and libraries, 304.88.xx series
 Name:		nvidia304
-Version:	304.88
-Release:	2
+Version:	304.108
+Release:	1
 Source0:	ftp://download.nvidia.com/XFree86/Linux-x86/%{version}/%{pkgname32}.run
 Source1:	ftp://download.nvidia.com/XFree86/Linux-x86_64/%{version}/%{pkgname64}.run
 # GPLv2 source code; see also http://cgit.freedesktop.org/~aplattner/
@@ -136,9 +136,6 @@ Source100: nvidia304.rpmlintrc
 Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3: nvidia-settings-include-xf86vmproto.patch
-Patch4:	nvidia-long-lived-304.88-dkms.conf-unique-module-name.patch
-#Build with kernel 3.10
-Patch6:		nvidia_304.88_linux_3.10.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -260,14 +257,27 @@ cd nvidia-settings-%{version}
 cd ..
 sh %{nsource} --extract-only
 
-%if !%simple
-cd %{pkgname}
-%patch4 -p0 -b .uniq~
-%patch6 -p2 -b .3.10
-cd ..
+rm -rf %{pkgname}/usr/src/nv/precompiled
+
+%if %simple
+# for old releases
+mkdir -p %{pkgname}/kernel
 %endif
 
-rm -rf %{pkgname}/usr/src/nv/precompiled
+# (tmb) nuke nVidia provided dkms.conf as we need our own
+rm -rf %{pkgname}/kernel/dkms.conf
+
+# install our own dkms.conf
+cat > %{pkgname}/kernel/dkms.conf <<EOF
+PACKAGE_NAME="%{drivername}"
+PACKAGE_VERSION="%{version}-%{release}"
+BUILT_MODULE_NAME[0]="nvidia"
+DEST_MODULE_LOCATION[0]="/kernel/drivers/char/drm"
+DEST_MODULE_NAME[0]="%{modulename}"
+MAKE[0]="make SYSSRC=\${kernel_source_dir} module"
+CLEAN="make -f Makefile.kbuild clean"
+AUTOINSTALL="yes"
+EOF
 
 cat > README.install.urpmi <<EOF
 This driver is for %cards.
@@ -667,6 +677,11 @@ dir=${dir#%{buildroot}}
 echo "$dir" | grep -q nvidia && echo "%%dir $dir" >> nvidia.files
 done
 [ -d %{buildroot}%{_includedir}/%{drivername} ] && echo "%{_includedir}/%{drivername}" >> nvidia-devel.files
+
+# for old releases in %%simple mode
+if ! [ -e %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/dkms.conf ]; then
+	install -m644 kernel/dkms.conf %{buildroot}%{_usrsrc}/%{drivername}-%{version}-%{release}/dkms.conf
+fi
 %endif
 
 %if !%simple
