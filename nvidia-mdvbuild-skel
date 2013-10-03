@@ -7,8 +7,8 @@ if [ "$(tail -n1 $self)" = "#LAST_LINE_OF_NVIDIA_MAKEBIN" ]; then
 	exit 1
 fi
 
-if [ ! -f /etc/mandriva-release ]; then
-	echo "You can build Mandriva packages only on a Mandriva Linux system."
+if [ ! -f /etc/distro-release ]; then
+	echo "You can build packages only on a OpenMandriva Linux system."
 	exit 1
 fi
 
@@ -64,18 +64,6 @@ x86)
 	exit 1
 esac
 
-case $pkgstyle in
-no-compat32)
-	echo "Unable to generate a package from a no-compat32 version of the driver."
-	echo "Use the normal version NVIDIA-Linux-$run_arch-$version.run instead."
-	exit 1
-	;;
-pkg0|pkg1)
-	echo "Unable to generate a package from a $pkgstyle version of the driver."
-	echo "You must use NVIDIA-Linux-$run_arch-$version-pkg2.run instead."
-	exit 1
-esac
-
 temp_root="$(mktemp -d --tmpdir nvidia-mdvbuild.XXXXXX)"
 mkdir -p $temp_root/{RPMS,BUILD,tmp}
 tail -n +$(($(grep -n '^#LAST_LINE_OF_NVIDIA_MAKEBIN$' $self | cut -f1 -d:)+1)) $self > $temp_root/nvidia-current.spec
@@ -94,7 +82,7 @@ LC_ALL=C rpmbuild -bb --with simple \
 	--define "pkgname $(basename $runfile .run)" \
 	--define "distsuffix custom.nvidia.mdv" \
 	--define "vendor Custom NVIDIA package" \
-	--define "packager nvidia-mdvbuild - http://kenobi.mandriva.com/~anssi/nvidia-mdvbuild" \
+	--define "Custom packager" \
 	$temp_root/nvidia-current.spec &> $temp_root/output.log
 
 buildstatus=$?
@@ -113,7 +101,7 @@ fi
 echo
 echo
 cat $temp_root/BUILD/*/*/warns.log 2>/dev/null &&
-	echo -e "Please inform Anssi Hannula <anssi@mandriva.org> or http://qa.mandriva.com/ of the above warnings.\n"
+	echo -e "Please inform on http://issues.openmandriva.org of the above warnings.\n"
 for package in ${temp_root}/RPMS/*/*.rpm; do
 	mv $package .
 	echo "Created package: $(basename $package)"
