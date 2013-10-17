@@ -111,7 +111,7 @@
 Summary:	NVIDIA proprietary X.org driver and libraries, 304.88.xx series
 Name:		nvidia304
 Version:	304.108
-Release:	4
+Release:	5
 Source0:	ftp://download.nvidia.com/XFree86/Linux-x86/%{version}/%{pkgname32}.run
 Source1:	ftp://download.nvidia.com/XFree86/Linux-x86_64/%{version}/%{pkgname64}.run
 # GPLv2 source code; see also http://cgit.freedesktop.org/~aplattner/
@@ -123,6 +123,7 @@ Source100: nvidia304.rpmlintrc
 Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3: nvidia-settings-include-xf86vmproto.patch
+Patch4:	nvidia304-linux-3.11.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -243,6 +244,10 @@ cd nvidia-settings-%{version}
 %patch3 -p1
 cd ..
 sh %{nsource} --extract-only
+
+cd %{pkgname}
+%patch4 -p1
+cd ..
 
 rm -rf %{pkgname}/usr/src/nv/precompiled
 
