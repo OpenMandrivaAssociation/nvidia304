@@ -80,9 +80,9 @@ LC_ALL=C rpmbuild -bb --with simple \
 	--define "rel 1" \
 	--define "nsource $(readlink -f ${runfile})" \
 	--define "pkgname $(basename $runfile .run)" \
-	--define "distsuffix custom.nvidia.mdv" \
+	--define "distsuffix custom.nvidia.omv" \
 	--define "vendor Custom NVIDIA package" \
-	--define "Custom packager" \
+	--define "packager Custom" \
 	$temp_root/nvidia-current.spec &> $temp_root/output.log
 
 buildstatus=$?
