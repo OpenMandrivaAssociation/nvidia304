@@ -14,7 +14,7 @@
 # the highest supported videodrv abi
 %define videodrv_abi	12
 
-%define priority	96300
+%define priority	9630
 
 # pkg0: plain archive
 # pkg1: + precompiled modules
@@ -110,28 +110,27 @@
 
 Summary:	NVIDIA proprietary X.org driver and libraries, 304.88.xx series
 Name:		nvidia304
-Version:	304.108
-Release:	5
+Version:	304.116
+Release:	1
 Source0:	ftp://download.nvidia.com/XFree86/Linux-x86/%{version}/%{pkgname32}.run
 Source1:	ftp://download.nvidia.com/XFree86/Linux-x86_64/%{version}/%{pkgname64}.run
 # GPLv2 source code; see also http://cgit.freedesktop.org/~aplattner/
 Source2:	ftp://download.nvidia.com/XFree86/nvidia-settings/nvidia-settings-%{version}.tar.bz2
 Source3:	ftp://download.nvidia.com/XFree86/nvidia-xconfig/nvidia-xconfig-%{version}.tar.bz2
-Source4: nvidia-mdvbuild-skel
-Source100: nvidia304.rpmlintrc
+Source4:	nvidia-mdvbuild-skel
+Source100:	nvidia304.rpmlintrc
 # https://qa.mandriva.com/show_bug.cgi?id=39921
-Patch1: nvidia-settings-enable-dyntwinview-mdv.patch
+Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
-Patch3: nvidia-settings-include-xf86vmproto.patch
-Patch4:	nvidia304-linux-3.11.patch
+Patch3:		nvidia-settings-include-xf86vmproto.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
-Group: 		System/Kernel and hardware
+Group:		System/Kernel and hardware
 ExclusiveArch:	%{ix86} x86_64
 BuildRequires:	imagemagick
-BuildRequires:  pkgconfig(gtk+-x11-2.0)
-BuildRequires:  pkgconfig(xxf86vm)
+BuildRequires:	pkgconfig(gtk+-x11-2.0)
+BuildRequires:	pkgconfig(xxf86vm)
 BuildRequires:	pkgconfig(gl)
 %if %{mdkversion} >= 200700
 BuildRequires:	pkgconfig(xv)
@@ -149,11 +148,11 @@ nvidia on 2007.0 and earlier.
 
 %package -n %{driverpkgname}
 Summary:	NVIDIA proprietary X.org driver and libraries for %cards
-Group: 		System/Kernel and hardware
+Group:		System/Kernel and hardware
 %if %{mdkversion} >= 200700
 # Older alternatives implementations were buggy in various ways:
-Requires(post): update-alternatives >= 1.9.0
-Requires(postun): update-alternatives >= 1.9.0
+Requires(post):	update-alternatives >= 1.9.0
+Requires(postun):	update-alternatives >= 1.9.0
 %endif
 %if %{mdkversion} >= 200800
 # Proprietary driver handling rework:
@@ -197,7 +196,7 @@ Summary:	NVIDIA kernel module for %cards
 Group:		System/Kernel and hardware
 Requires:	dkms
 Requires(post):	dkms
-Requires(preun): dkms
+Requires(preun):	dkms
 Requires:	%{driverpkgname} = %{version}
 
 %description -n dkms-%{drivername}
@@ -208,7 +207,7 @@ is to be used with the %{driverpkgname} package.
 Summary:	NVIDIA XvMC/OpenGL/CUDA development headers (%{drivername})
 Group:		Development/C
 Requires:	%{driverpkgname} = %{version}-%{release}
-Requires:       %{drivername}-cuda-opencl = %{version}-%{release}
+Requires:	%{drivername}-cuda-opencl = %{version}-%{release}
 
 %description -n %{drivername}-devel
 NVIDIA XvMC static development library and OpenGL headers for
@@ -244,10 +243,6 @@ cd nvidia-settings-%{version}
 %patch3 -p1
 cd ..
 sh %{nsource} --extract-only
-
-cd %{pkgname}
-%patch4 -p1
-cd ..
 
 rm -rf %{pkgname}/usr/src/nv/precompiled
 
