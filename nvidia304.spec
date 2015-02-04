@@ -110,8 +110,8 @@
 
 Summary:	NVIDIA proprietary X.org driver and libraries, 304.88.xx series
 Name:		nvidia304
-Version:	304.121
-Release:	2
+Version:	304.125
+Release:	1
 Source0:	ftp://download.nvidia.com/XFree86/Linux-x86/%{version}/%{pkgname32}.run
 Source1:	ftp://download.nvidia.com/XFree86/Linux-x86_64/%{version}/%{pkgname64}.run
 # GPLv2 source code; see also http://cgit.freedesktop.org/~aplattner/
@@ -329,7 +329,6 @@ export LDFLAGS="%{?ldflags}"
 %make -C nvidia-xconfig-%{version} STRIP_CMD=true
 
 %install
-rm -rf %{buildroot}
 cd %{pkgname}
 
 # dkms
@@ -909,12 +908,8 @@ rmmod nvidia > /dev/null 2>&1 || true
 # rmmod any old driver if present and not in use (e.g. by X)
 rmmod nvidia > /dev/null 2>&1 || true
 
-%clean
-rm -rf %{buildroot}
 
 %files -n %{driverpkgname}
-%defattr(-,root,root)
-
 %doc README.install.urpmi README.manual-setup
 
 %if "%{ldetect_cards_name}" != ""
@@ -1020,7 +1015,6 @@ rm -rf %{buildroot}
 %{nvidia_driversdir}/nvidia_drv.so
 
 %files -n %{drivername}-devel
-%defattr(-,root,root)
 %{_includedir}/%{drivername}
 %{nvidia_libdir}/libXvMCNVIDIA.a
 %{nvidia_libdir}/libXvMCNVIDIA_dynamic.so
@@ -1041,16 +1035,13 @@ rm -rf %{buildroot}
 %endif
 
 %files -n dkms-%{drivername}
-%defattr(-,root,root)
 %doc %{pkgname}/LICENSE
 %{_usrsrc}/%{drivername}-%{version}-%{release}
 
 %files -n %{drivername}-doc-html
-%defattr(-,root,root)
 %doc html-doc/*
 
 %files -n %{drivername}-cuda-opencl -f %pkgname/nvidia-cuda.files
-%defattr(-,root,root)
 %if !%simple
 %{nvidia_libdir}/libOpenCL.so.1.0.0
 %{nvidia_libdir}/libOpenCL.so.1.0
