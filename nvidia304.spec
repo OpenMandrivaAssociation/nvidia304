@@ -7,81 +7,50 @@
 # %simple mode can be used to transform an arbitrary nvidia installer
 # package to rpms, similar to %atibuild mode in fglrx.
 # Macros version, rel, nsource, pkgname, distsuffix should be manually defined.
-%define simple          0
+%define simple 0
 %{?_without_simple: %global simple 0}
 %{?_with_simple: %global simple 1}
 
+%if !%simple
+# When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
+%define version 304.125
+%define rel 1
 # the highest supported videodrv abi
-%define videodrv_abi	15
+%define videodrv_abi 19
+%endif
 
-%define priority	9630
+%define priority 9630
 
 # pkg0: plain archive
 # pkg1: + precompiled modules
 # pkg2: + 32bit compatibility libraries
-%define pkgname32	NVIDIA-Linux-x86-%{version}
-%define pkgname64	NVIDIA-Linux-x86_64-%{version}
+%define pkgname32 NVIDIA-Linux-x86-%{version}
+%define pkgname64 NVIDIA-Linux-x86_64-%{version}
 
 # For now, backportability is kept for 2006.0 / CS4 forwards.
 
-%define drivername		nvidia304
-%define driverpkgname		x11-driver-video-%{drivername}
-%define modulename		%{drivername}
-%define cards			GeForce 6/7 based cards
-%define xorg_libdir		%{_libdir}/xorg
-%define xorg_extra_modules	%{_libdir}/xorg/extra-modules
-%define nvidia_driversdir	%{_libdir}/%{drivername}/xorg
-%define nvidia_extensionsdir	%{_libdir}/%{drivername}/xorg
-%define nvidia_modulesdir	%{_libdir}/%{drivername}/xorg
-%define nvidia_libdir		%{_libdir}/%{drivername}
-%define nvidia_libdir32		%{_prefix}/lib/%{drivername}
-%define nvidia_bindir		%{nvidia_libdir}/bin
-%define nvidia_deskdir		%{_datadir}/%{drivername}
-%define nvidia_xvmcconfdir	%{_sysconfdir}/%{drivername}
-%define nvidia_xinitdir         %{_sysconfdir}/%{drivername}
-%define ld_so_conf_dir		%{_sysconfdir}/%{drivername}
-%define ld_so_conf_file		ld.so.conf
+%define drivername nvidia304
+%define driverpkgname x11-driver-video-%{drivername}
+%define modulename %{drivername}
+%define cards GeForce 6xxx and GeForce 7xxx cards
+%define xorg_libdir %{_libdir}/xorg
+%define xorg_extra_modules %{_libdir}/xorg/extra-modules
+%define nvidia_driversdir %{_libdir}/%{drivername}/xorg
+%define nvidia_extensionsdir %{_libdir}/%{drivername}/xorg
+%define nvidia_modulesdir %{_libdir}/%{drivername}/xorg
+%define nvidia_libdir %{_libdir}/%{drivername}
+%define nvidia_libdir32 %{_prefix}/lib/%{drivername}
+%define nvidia_bindir %{nvidia_libdir}/bin
+%define nvidia_deskdir %{_datadir}/%{drivername}
+%define nvidia_xvmcconfdir %{_sysconfdir}/%{drivername}
+%define nvidia_xinitdir %{_sysconfdir}/%{drivername}
+%define ld_so_conf_dir %{_sysconfdir}/%{drivername}
+%define ld_so_conf_file ld.so.conf
 
 # The entry in Cards+ this driver should be associated with, if there is
 # no entry in ldetect-lst default pcitable:
 # cooker ldetect-lst should be up-to-date
 %define ldetect_cards_name %nil
-
-%if %{mdkversion} <= 200910
-%define nvidia_driversdir	%{xorg_libdir}/modules/drivers/%{drivername}
-%endif
-
-%if %{mdkversion} <= 200900
-%define nvidia_extensionsdir	%{xorg_libdir}/modules/extensions/%{drivername}
-%define nvidia_modulesdir	%{xorg_libdir}/modules
-%endif
-
-%if %{mdkversion} <= 200810
-%define drivername		nvidia-current
-%define cards			GeForce 6/7 and later cards
-%endif
-
-%if %{mdkversion} <= 200710
-%define driverpkgname           %{drivername}
-%define drivername		nvidia304xx
-%endif
-
-%if %{mdkversion} <= 200700
-%define drivername		nvidia
-%define ld_so_conf_dir		%{_sysconfdir}/ld.so.conf.d/GL
-%define ld_so_conf_file		%{drivername}.conf
-%endif
-
-%if %{mdkversion} <= 200600
-%define xorg_libdir		%{_prefix}/X11R6/%{_lib}
-%define ld_so_conf_dir		%{_sysconfdir}/ld.so.conf.d
-%define nvidia_driversdir	%{xorg_libdir}/modules/drivers
-%define nvidia_extensionsdir	%{xorg_libdir}/modules/extensions/nvidia
-%define nvidia_bindir		%{_bindir}
-%define nvidia_xvmcconfdir	%{_sysconfdir}/X11
-%define nvidia_deskdir		%{_datadir}/applications
-%define nvidia_xinitdir		%{_sysconfdir}/X11/xinit.d
-%endif
 
 %define biarches x86_64
 %ifarch %{ix86}
@@ -95,23 +64,23 @@
 
 # Other packages should not require any NVIDIA libraries, and this package
 # should not be pulled in when libGL.so.1 is required
-%define __noautoprov 'libGL\\.so\\.1(.*)|devel\\(libGL(.*)|\\.so'
-%define common_requires_exceptions libGL\\.so\\|libGLcore\\.so\\|libnvidia.*\\.so
+%define __noautoprov '^libGL\\.so\\.1(.*)|devel\\(libGL(.*)|\\.so'
+%define common_requires_exceptions ^libGL\\.so\\|^libGLcore\\.so\\|^libnvidia.*\\.so
 
 %ifarch %{biarches}
 # (anssi) Allow installing of 64-bit package if the runtime dependencies
 # of 32-bit libraries are not satisfied. If a 32-bit package that requires
 # libGL.so.1 is installed, the 32-bit mesa libs are pulled in and that will
 # pull the dependencies of 32-bit nvidia libraries in as well.
-%define __noautoreq %common_requires_exceptions\\|lib.*so\\.[^(]\\+\\(([^)]\\+)\\)\\?$
+%define __noautoreq %common_requires_exceptions\\|^lib.*so\\.[^(]\\+\\(([^)]\\+)\\)\\?$
 %else
 %define __noautoreq %common_requires_exceptions
 %endif
 
-Summary:	NVIDIA proprietary X.org driver and libraries, 304.88.xx series
+Summary:	NVIDIA proprietary X.org driver and libraries, 304.xx series
 Name:		nvidia304
-Version:	304.125
-Release:	1
+Version:	%{version}
+Release:	%{rel}
 Source0:	ftp://download.nvidia.com/XFree86/Linux-x86/%{version}/%{pkgname32}.run
 Source1:	ftp://download.nvidia.com/XFree86/Linux-x86_64/%{version}/%{pkgname64}.run
 # GPLv2 source code; see also http://cgit.freedesktop.org/~aplattner/
@@ -132,9 +101,7 @@ BuildRequires:	imagemagick
 BuildRequires:	pkgconfig(gtk+-x11-2.0)
 BuildRequires:	pkgconfig(xxf86vm)
 BuildRequires:	pkgconfig(gl)
-%if %{mdkversion} >= 200700
 BuildRequires:	pkgconfig(xv)
-%endif
 %if "%{driverpkgname}" == "nvidia"
 # old nvidia package had different versioning
 Epoch:		1
@@ -149,28 +116,20 @@ nvidia on 2007.0 and earlier.
 %package -n %{driverpkgname}
 Summary:	NVIDIA proprietary X.org driver and libraries for %cards
 Group:		System/Kernel and hardware
-%if %{mdkversion} >= 200700
 # Older alternatives implementations were buggy in various ways:
 Requires(post):	update-alternatives >= 1.9.0
 Requires(postun):	update-alternatives >= 1.9.0
-%endif
-%if %{mdkversion} >= 200800
 # Proprietary driver handling rework:
 Conflicts:	harddrake < 10.4.163
 Conflicts:	drakx-kbd-mouse-x11 < 0.21
 Conflicts:	x11-server-common < 1.3.0.0-17
 # Suggests supported as of 2008.0, pull the rest of docs:
 Suggests:	%{drivername}-doc-html
-%endif
-%if %{mdkversion} >= 200810
 # for missing libwfb.so
 Conflicts:	x11-server-common < 1.4
 # Proper support for versioned kmod() was added in 2008.1:
 Requires:	kmod(%{modulename}) = %{version}
-%endif
-%if %{mdkversion} >= 200910
 Conflicts:	x11-server-common < 1.6.0-11
-%endif
 Requires:	x11-server-common
 # Conflict with the next videodrv ABI break.
 # The NVIDIA driver supports the previous ABI versions as well and therefore
@@ -222,7 +181,7 @@ Conflicts:	%{driverpkgname} < 304.14.25-2
 
 %description -n %{drivername}-cuda-opencl
 Cuda and OpenCL libraries for NVIDIA proprietary driver 
-for %cards.  
+for %cards.
 This package is not required for normal use, it provides libraries to
 use NVIDIA cards for High Performance Computing (HPC).
 
@@ -285,26 +244,14 @@ driver package. You can find the instructions for the recommended automatic
 installation in the file 'README.install.urpmi' in this directory.
 
 - Open %{_sysconfdir}/X11/xorg.conf and make the following changes:
-  o Change the Driver to "nvidia" in the Device section
-  o Make the line below the only 'glx' related line in the Module section:
-%if %{mdkversion} >= 200710
-      Load "glx"
-%if %{mdkversion} >= 200800
-  o Remove any 'ModulePath' lines from the Files section
-%else
-  o Make the lines below the only 'ModulePath' lines in the Files section:
-      ModulePath "%{nvidia_extensionsdir}"
-      ModulePath "%{xorg_libdir}/modules"
-%endif
-%else
-      Load "%{nvidia_extensionsdir}/libglx.so"
-%endif
-%if %{mdkversion} >= 200700
-- Run "update-alternatives --set gl_conf %{ld_so_conf_dir}/%{ld_so_conf_file}" as root.
+o Change the Driver to "nvidia" in the Device section
+o Make the line below the only 'glx' related line in the Module section,
+adding it if it is not already there:
+Load "glx"
+o Remove any 'ModulePath' lines from the Files section
+- Run "update-alternatives --set gl_conf %{_sysconfdir}/%{drivername}/ld.so.conf" as root.
 - Run "ldconfig -X" as root.
-%endif
 EOF
-
 mv %{pkgname}/html html-doc
 
 # It wants to link Xxf86vm statically (presumably because it is somewhat more
@@ -315,14 +262,7 @@ sed -i 's|-O ||' nvidia-xconfig-%{version}/Makefile
 rm nvidia-settings-%{version}/src/*/*.a
 
 %build
-
-%if %mdkversion >= 201000
 %setup_compile_flags
-%else
-export CFLAGS="%{optflags}"
-export CXXFLAGS="$CFLAGS"
-export LDFLAGS="%{?ldflags}"
-%endif
 
 %make -C nvidia-settings-%{version}/src/libXNVCtrl
 %make -C nvidia-settings-%{version} STRIP_CMD=true
@@ -363,296 +303,288 @@ install -m644 nvidia-settings.png %{buildroot}%{_iconsdir}/hicolor/48x48/apps/%{
 %endif
 
 error_fatal() {
-echo "Error: $@." >&2
-exit 1
+    echo "Error: $@." >&2
+    exit 1
 }
 
 error_unhandled() {
-echo "Warning: $@." >&2
-echo "Warning: $@." >> warns.log
+    echo "Warning: $@." >&2
+    echo "Warning: $@." >> warns.log
 %if !%simple
-# cause distro builds to fail in case of unhandled files
-exit 1
+    # cause distro builds to fail in case of unhandled files
+    exit 1
 %endif
 }
 
 parseparams() {
-for value in $rest; do
-local param=$1
-[ -n "$param" ] || error_fatal "unhandled parameter $value"
-shift
-eval $param=$value
+    for value in $rest; do
+	local param=$1
+	[ -n "$param" ] || error_fatal "unhandled parameter $value"
+	shift
+	eval $param=$value
 
-[ -n "$value" ] || error_fatal "empty $param"
+	[ -n "$value" ] || error_fatal "empty $param"
 
-# resolve libdir based on $arch
-if [ "$param" = "arch" ]; then
-case "$arch" in
-NATIVE) nvidia_libdir=%{nvidia_libdir};;
-COMPAT32) nvidia_libdir=%{nvidia_libdir32};;
-*) error_fatal "unknown arch $arch"
-esac
-fi
-done
+	# resolve libdir based on $arch
+	if [ "$param" = "arch" ]; then
+	    case "$arch" in
+	    NATIVE)		nvidia_libdir=%{nvidia_libdir};;
+	    COMPAT32)	nvidia_libdir=%{nvidia_libdir32};;
+	    *)		error_fatal "unknown arch $arch"
+	    esac
+	fi
+    done
 }
 
 add_to_list() {
 %if !%simple
-# on distro builds, only use .manifest for %doc files
-[ "${2#%doc}" = "${2}" ] && return
+    # on distro builds, only use .manifest for %doc files
+    [ "${2#%doc}" = "${2}" ] && return
 %endif
-local list="$1.files"
-local entry="$2"
-echo $entry >> $list
+    local list="$1.files"
+    local entry="$2"
+    echo $entry >> $list
 }
 
 install_symlink() {
-local pkg="$1"
-local dir="$2"
-mkdir -p %{buildroot}$dir
-ln -s $dest %{buildroot}$dir/$file
-add_to_list $pkg $dir/$file
+    local pkg="$1"
+    local dir="$2"
+    mkdir -p %{buildroot}$dir
+    ln -s $dest %{buildroot}$dir/$file
+    add_to_list $pkg $dir/$file
 }
 
 install_lib_symlink() {
-local pkg="$1"
-local dir="$2"
-case "$file" in
-libvdpau_*.so)
-# vdpau drivers => not put into -devel
-;;
-*.so)
-pkg=nvidia-devel;;
-esac
-install_symlink $pkg $dir
+    local pkg="$1"
+    local dir="$2"
+    case "$file" in
+    libvdpau_*.so)
+	# vdpau drivers => not put into -devel
+	;;
+    *.so)
+	pkg=nvidia-devel;;
+    esac
+    install_symlink $pkg $dir
 }
 
 install_file_only() {
-local pkg="$1"
-local dir="$2"
-mkdir -p %{buildroot}$dir
-# replace 0444 with more usual 0644
-[ "$perms" = "0444" ] && perms="0644"
-install -m $perms $file %{buildroot}$dir
+    local pkg="$1"
+    local dir="$2"
+    mkdir -p %{buildroot}$dir
+    # replace 0444 with more usual 0644
+    [ "$perms" = "0444" ] && perms="0644"
+    install -m $perms $file %{buildroot}$dir
 }
 
 install_file() {
-local pkg="$1"
-local dir="$2"
-install_file_only $pkg $dir
-add_to_list $pkg $dir/$(basename $file)
+    local pkg="$1"
+    local dir="$2"
+    install_file_only $pkg $dir
+    add_to_list $pkg $dir/$(basename $file)
 }
 
 get_module_dir() {
-local subdir="$1"
-case "$subdir" in
-extensions*) echo %{nvidia_extensionsdir};;
-drivers/) echo %{nvidia_driversdir};;
-/) echo %{nvidia_modulesdir};;
-*) error_unhandled "unhandled module subdir $subdir"
-echo %{nvidia_modulesdir};;
-esac
+    local subdir="$1"
+    case "$subdir" in
+    extensions*)	echo %{nvidia_extensionsdir};;
+    drivers/)	echo %{nvidia_driversdir};;
+    /)		echo %{nvidia_modulesdir};;
+    *)		error_unhandled "unhandled module subdir $subdir"
+	    echo %{nvidia_modulesdir};;
+    esac
 }
 
 for file in nvidia.files nvidia-devel.files nvidia-cuda.files nvidia-dkms.files nvidia-html.files; do
-rm -f $file
-touch $file
+    rm -f $file
+    touch $file
 done
 
 # install files according to .manifest
 cat .manifest | tail -n +9 | while read line; do
-rest=${line}
-file=${rest%%%% *}
-rest=${rest#* }
-perms=${rest%%%% *}
-rest=${rest#* }
-type=${rest%%%% *}
-rest=${rest#* }
+    rest=${line}
+    file=${rest%%%% *}
+    rest=${rest#* }
+    perms=${rest%%%% *}
+    rest=${rest#* }
+    type=${rest%%%% *}
+    rest=${rest#* }
 
-case "$type" in
-CUDA_LIB)
-parseparams arch subdir
-install_file nvidia-cuda $nvidia_libdir/$subdir
-;;
-CUDA_SYMLINK)
-parseparams arch subdir dest
-install_lib_symlink nvidia-cuda $nvidia_libdir/$subdir
-;;
-NVCUVID_LIB)
-parseparams arch
-install_file nvidia-cuda $nvidia_libdir
-;;
-NVCUVID_LIB_SYMLINK)
-parseparams arch dest
-install_lib_symlink nvidia-cuda $nvidia_libdir
-;;
-OPENGL_LIB)
-parseparams arch
-install_file nvidia $nvidia_libdir
-;;
-OPENGL_SYMLINK)
-parseparams arch dest
-install_lib_symlink nvidia $nvidia_libdir
-;;
-TLS_LIB)
-parseparams arch style subdir
-install_file nvidia $nvidia_libdir/$subdir
-;;
-TLS_SYMLINK)
-parseparams arch style subdir dest
-install_lib_symlink nvidia $nvidia_libdir/$subdir
-;;
-UTILITY_LIB)
-install_file nvidia %{nvidia_libdir}
-;;
-UTILITY_LIB_SYMLINK)
-parseparams dest
-install_lib_symlink nvidia %{nvidia_libdir}
-;;
-VDPAU_LIB)
-parseparams arch subdir
-%if %{mdkversion} >= 200900
-# on 2009.0+, only install libvdpau_nvidia.so
-case $file in *libvdpau_nvidia.so*);; *) continue; esac
-%endif
-install_file nvidia $nvidia_libdir/$subdir
-;;
-VDPAU_SYMLINK)
-parseparams arch subdir dest
-%if %{mdkversion} >= 200900
-# on 2009.0+, only install libvdpau_nvidia.so
-case $file in *libvdpau_nvidia.so*);; *) continue; esac
-%endif
-install_lib_symlink nvidia $nvidia_libdir/$subdir
-;;
-XLIB_STATIC_LIB)
-install_file nvidia-devel %{nvidia_libdir}
-;;
-XLIB_SHARED_LIB)
-install_file nvidia %{nvidia_libdir}
-;;
-XLIB_SYMLINK)
-parseparams dest
-install_lib_symlink nvidia %{nvidia_libdir}
-;;
-LIBGL_LA)
-# (Anssi) we don't install .la files
-;;
-XMODULE_SHARED_LIB|GLX_MODULE_SHARED_LIB)
-parseparams subdir
-install_file nvidia $(get_module_dir $subdir)
-;;
-XMODULE_NEWSYM)
-# symlink that is created only if it doesn't already
-# exist (i.e. as part of x11-server)
-case "$file" in
-libwfb.so)
-%if %{mdkversion} >= 200810
-# 2008.1+ has this one already
-continue
-%endif
-;;
-*)
-error_unhandled "unknown XMODULE_NEWSYM type file $file, skipped"
-continue
-esac
-parseparams subdir dest
-install_symlink nvidia $(get_module_dir $subdir)
-;;
-XMODULE_SYMLINK|GLX_MODULE_SYMLINK)
-parseparams subdir dest
-install_symlink nvidia $(get_module_dir $subdir)
-;;
-VDPAU_HEADER)
-%if %{mdkversion} >= 200900
-# already in vdpau-devel
-continue
-%endif
-parseparams subdir
-install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
-;;
-OPENGL_HEADER|CUDA_HEADER)
-parseparams subdir
-install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
-;;
-DOCUMENTATION)
-parseparams subdir
-case $subdir in
-*/html)
-add_to_list nvidia-html "%%doc %{pkgname}/$file"
-continue
-;;
-*/include/*)
-continue
-;;
-esac
-case $file in
-*XF86Config*|*nvidia-settings.png)
-continue;;
-esac
-add_to_list nvidia "%%doc %{pkgname}/$file"
-;;
-MANPAGE)
-parseparams subdir
-case "$file" in
-*nvidia-installer*)
-# not installed
-continue
-;;
-*nvidia-settings*|*nvidia-xconfig*|*nvidia-cuda*)
+    case "$type" in
+    CUDA_LIB)
+	    parseparams arch subdir
+	    install_file nvidia-cuda $nvidia_libdir/$subdir
+	    ;;
+    CUDA_SYMLINK)
+	    parseparams arch subdir dest
+	    install_lib_symlink nvidia-cuda $nvidia_libdir/$subdir
+	    ;;
+    NVCUVID_LIB)
+	    parseparams arch
+	    install_file nvidia-cuda $nvidia_libdir
+	    ;;
+    NVCUVID_LIB_SYMLINK)
+	    parseparams arch dest
+	    install_lib_symlink nvidia-cuda $nvidia_libdir
+	    ;;
+    OPENGL_LIB)
+	    parseparams arch
+	    install_file nvidia $nvidia_libdir
+	    ;;
+    OPENGL_SYMLINK)
+	    parseparams arch dest
+	    install_lib_symlink nvidia $nvidia_libdir
+	    ;;
+    TLS_LIB)
+	    parseparams arch style subdir
+	    install_file nvidia $nvidia_libdir/$subdir
+	    ;;
+    TLS_SYMLINK)
+	    parseparams arch style subdir dest
+	    install_lib_symlink nvidia $nvidia_libdir/$subdir
+	    ;;
+    UTILITY_LIB)
+	    install_file nvidia %{nvidia_libdir}
+	    ;;
+    UTILITY_LIB_SYMLINK)
+	    parseparams dest
+	    install_lib_symlink nvidia %{nvidia_libdir}
+	    ;;
+    VDPAU_LIB)
+	    parseparams arch subdir
+	    # on 2009.0+, only install libvdpau_nvidia.so
+	    case $file in *libvdpau_nvidia.so*);; *) continue; esac
+	    install_file nvidia $nvidia_libdir/$subdir
+	    ;;
+    VDPAU_SYMLINK)
+	    parseparams arch subdir dest
+	    # on 2009.0+, only install libvdpau_nvidia.so
+	    case $file in *libvdpau_nvidia.so*);; *) continue; esac
+	    install_lib_symlink nvidia $nvidia_libdir/$subdir
+	    ;;
+    XLIB_STATIC_LIB)
+	    install_file nvidia-devel %{nvidia_libdir}
+	    ;;
+    XLIB_SHARED_LIB)
+	    install_file nvidia %{nvidia_libdir}
+	    ;;
+    XLIB_SYMLINK)
+	    parseparams dest
+	    install_lib_symlink nvidia %{nvidia_libdir}
+	    ;;
+    LIBGL_LA)
+	    # (Anssi) we don't install .la files
+	    ;;
+    XMODULE_SHARED_LIB|GLX_MODULE_SHARED_LIB)
+	    parseparams subdir
+	    install_file nvidia $(get_module_dir $subdir)
+	    ;;
+    XMODULE_NEWSYM)
+	    # symlink that is created only if it doesn't already
+	    # exist (i.e. as part of x11-server)
+	    case "$file" in
+	    libwfb.so)
+	    # 2008.1+ has this one already
+		    continue
+		    ;;
+	    *)
+		    error_unhandled "unknown XMODULE_NEWSYM type file $file, skipped"
+		    continue
+	    esac
+	    parseparams subdir dest
+	    install_symlink nvidia $(get_module_dir $subdir)
+	    ;;
+    XMODULE_SYMLINK|GLX_MODULE_SYMLINK)
+	    parseparams subdir dest
+	    install_symlink nvidia $(get_module_dir $subdir)
+	    ;;
+    VDPAU_HEADER)
+	    # already in vdpau-devel
+	    continue
+	    parseparams subdir
+	    install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
+	    ;;
+    OPENGL_HEADER|CUDA_HEADER)
+	    parseparams subdir
+	    install_file_only nvidia-devel %{_includedir}/%{drivername}/$subdir
+	    ;;
+    DOCUMENTATION)
+	    parseparams subdir
+	    case $subdir in
+	    */html)
+			add_to_list nvidia-html "%%doc %{pkgname}/$file"
+			continue
+			;;
+	    */include/*)
+			continue
+			;;
+	    esac
+	    case $file in
+	    *XF86Config*|*nvidia-settings.png)
+			continue;;
+	    esac
+	    add_to_list nvidia "%%doc %{pkgname}/$file"
+	    ;;
+    MANPAGE)
+	    parseparams subdir
+	    case "$file" in
+	    *nvidia-installer*)
+			# not installed
+			continue
+			;;
+	    *nvidia-settings*|*nvidia-xconfig*|*nvidia-cuda*)
 %if !%simple
-# installed separately below
-continue
+			# installed separately below
+			continue
 %endif
-;;
-*nvidia-smi*)
-# ok
-;;
-*)
-error_unhandled "skipped unknown man page $(basename $file)"
-continue
-esac
-install_file_only nvidia %{_mandir}/$subdir
-;;
-UTILITY_BINARY)
-case "$file" in
-*nvidia-settings|*nvidia-xconfig|*nvidia-cuda*)
+			;;
+	    *nvidia-smi*)
+			# ok
+			;;
+	    *)
+			error_unhandled "skipped unknown man page $(basename $file)"
+			continue
+	    esac
+	    install_file_only nvidia %{_mandir}/$subdir
+	    ;;
+    UTILITY_BINARY)
+	    case "$file" in
+	    *nvidia-settings|*nvidia-xconfig|*nvidia-cuda*)
 %if !%simple
-# not installed, we install our own copy
-continue
+			# not installed, we install our own copy
+			continue
 %endif
-;;
-*nvidia-smi|*nvidia-bug-report.sh|*nvidia-debugdump)
-# ok
-;;
-*)
-error_unhandled "unknown binary $(basename $file) will be installed to %{nvidia_bindir}/$(basename $file)"
-;;
-esac
-install_file nvidia %{nvidia_bindir}
-;;
-UTILITY_BIN_SYMLINK)
-case $file in nvidia-uninstall) continue;; esac
-parseparams dest
-install_symlink nvidia %{nvidia_bindir}
-;;
-INSTALLER_BINARY)
-# not installed
-;;
-KERNEL_MODULE_SRC)
-install_file nvidia-dkms %{_usrsrc}/%{drivername}-%{version}-%{release}
-;;
-CUDA_ICD)
-# in theory this should go to the cuda subpackage, but it goes into the main package
-# as this avoids one broken symlink and it is small enough to not cause space issues
-install_file nvidia %{_sysconfdir}/%{drivername}
-;;
-DOT_DESKTOP)
-# we provide our own for now
-;;
-*)
-error_unhandled "file $(basename $file) of unknown type $type will be skipped"
-esac
+			;;
+	    *nvidia-smi|*nvidia-bug-report.sh|*nvidia-debugdump)
+			# ok
+			;;
+	    *)
+			error_unhandled "unknown binary $(basename $file) will be installed to %{nvidia_bindir}/$(basename $file)"
+			;;
+	    esac
+	    install_file nvidia %{nvidia_bindir}
+	    ;;
+    UTILITY_BIN_SYMLINK)
+	    case $file in nvidia-uninstall) continue;; esac
+	    parseparams dest
+	    install_symlink nvidia %{nvidia_bindir}
+	    ;;
+    INSTALLER_BINARY)
+	    # not installed
+	    ;;
+    KERNEL_MODULE_SRC)
+	    install_file nvidia-dkms %{_usrsrc}/%{drivername}-%{version}-%{release}
+	    ;;
+    CUDA_ICD)
+	    # in theory this should go to the cuda subpackage, but it goes into the main package
+	    # as this avoids one broken symlink and it is small enough to not cause space issues
+	    install_file nvidia %{_sysconfdir}/%{drivername}
+	    ;;
+    DOT_DESKTOP)
+	    # we provide our own for now
+	    ;;
+    *)
+	    error_unhandled "file $(basename $file) of unknown type $type will be skipped"
+    esac
 done
 
 [ -z "$warnings" ] || echo "Please inform Anssi Hannula <anssi@mandriva.org> or http://qa.mandriva.com/ of the above warnings." >> warns.log
@@ -701,14 +633,6 @@ touch %{buildroot}%{_bindir}/nvidia-bug-report.sh
 # rpmlint:
 chmod 0755 %{buildroot}%{_bindir}/*
 
-# old alternatives
-%if %{mdkversion} <= 200910
-touch %{buildroot}%{_libdir}/xorg/modules/drivers/nvidia_drv.so
-%endif
-%if %{mdkversion} <= 200900
-touch %{buildroot}%{_libdir}/xorg/modules/extensions/libglx.so
-%endif
-
 %if !%simple
 # install man pages
 install -m755 ../nvidia-settings-%{version}/doc/_out/*/nvidia-settings.1 %{buildroot}%{_mandir}/man1
@@ -744,16 +668,6 @@ touch %{buildroot}%{_sysconfdir}/ld.so.conf.d/GL.conf
 install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.d
 touch %{buildroot}%{_sysconfdir}/modprobe.d/display-driver.conf
 echo "install nvidia /sbin/modprobe %{modulename} \$CMDLINE_OPTS" > %{buildroot}%{_sysconfdir}/%{drivername}/modprobe.conf
-
-%if %{mdkversion} < 201100
-# modprobe.preload.d
-# This is here because sometimes (one case reported by Christophe Fergeau on 04/2010)
-# starting X server fails if the driver module is not already loaded.
-# This is fixed by the reworked kms-dkms-plymouth-drakx-initrd system in 2011.0.
-install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.preload.d
-touch %{buildroot}%{_sysconfdir}/modprobe.preload.d/display-driver
-echo "%{modulename}" > %{buildroot}%{_sysconfdir}/%{drivername}/modprobe.preload
-%endif
 
 # XvMCConfig
 install -d -m755 %{buildroot}%{_sysconfdir}/%{drivername}
@@ -806,93 +720,62 @@ export EXCLUDE_FROM_STRIP="$(find %{buildroot} -type f \! -name nvidia-settings 
 
 
 %post -n %{driverpkgname}
-%if %{mdkversion} >= 200710
 # XFdrake used to generate an nvidia.conf file
 [ -L %{_sysconfdir}/modprobe.d/nvidia.conf ] || rm -f %{_sysconfdir}/modprobe.d/nvidia.conf
-%endif
 
-%if %{mdkversion} >= 200700
-%if %{mdkversion} <= 200810
 current_glconf="$(readlink -e %{_sysconfdir}/ld.so.conf.d/GL.conf)"
-%endif
 
-%if %{mdkversion} < 200800
-# Handle upgrading from setups where libwfb was not using alternatives.
-# From 2008.0 onwards the calling of --set after --install on rename makes
-# this unnecessary.
-if [ "${current_glconf}" = "%{_sysconfdir}/nvidia97xx/ld.so.conf" ]; then
-	wfblink="$(readlink %{_libdir}/xorg/modules/libnvidia-wfb.so.1)"
-	if [ "${wfblink%.so.1*}" = "libnvidia-wfb" ]; then
-		# The below update-alternatives will recreate this
-		/bin/rm %{_libdir}/xorg/modules/libnvidia-wfb.so.1
-	fi
-fi
-%endif
+# owned by libvdpau1, created in case libvdpau1 is installed only just after
+# this package
+mkdir -p %{_libdir}/vdpau
 
-%define compat_ext %([ "%{_extension}" == ".bz2" ] || echo %{_extension})
 %{_sbindir}/update-alternatives \
-	--install %{_sysconfdir}/ld.so.conf.d/GL.conf gl_conf %{ld_so_conf_dir}/%{ld_so_conf_file} %{priority} \
-	--slave %{_mandir}/man1/nvidia-settings.1%{_extension} man_nvidiasettings%{compat_ext} %{_mandir}/man1/alt-%{drivername}-settings.1%{_extension} \
-	--slave %{_mandir}/man1/nvidia-xconfig.1%{_extension} man_nvidiaxconfig%{compat_ext} %{_mandir}/man1/alt-%{drivername}-xconfig.1%{_extension} \
-	--slave %{_datadir}/applications/mandriva-nvidia-settings.desktop nvidia_desktop %{nvidia_deskdir}/mandriva-nvidia-settings.desktop \
-	--slave %{_bindir}/nvidia-settings nvidia_settings %{nvidia_bindir}/nvidia-settings \
-	--slave %{_bindir}/nvidia-smi nvidia_smi %{nvidia_bindir}/nvidia-smi \
-	--slave %{_bindir}/nvidia-xconfig nvidia_xconfig %{nvidia_bindir}/nvidia-xconfig \
-	--slave %{_bindir}/nvidia-bug-report.sh nvidia_bug_report %{nvidia_bindir}/nvidia-bug-report.sh \
-	--slave %{_sysconfdir}/X11/XvMCConfig xvmcconfig %{nvidia_xvmcconfdir}/XvMCConfig \
-	--slave %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit nvidia-settings.xinit %{nvidia_xinitdir}/nvidia-settings.xinit \
-%if %{mdkversion} <= 200910
-	--slave %{_libdir}/xorg/modules/drivers/nvidia_drv.so nvidia_drv %{nvidia_driversdir}/nvidia_drv.so \
+    --install %{_sysconfdir}/ld.so.conf.d/GL.conf gl_conf %{_sysconfdir}/%{drivername}/ld.so.conf %{priority} \
+    --slave %{_mandir}/man1/nvidia-settings.1%{_extension} man_nvidiasettings%{_extension} %{_mandir}/man1/alt-%{drivername}-settings.1%{_extension} \
+    --slave %{_mandir}/man1/nvidia-xconfig.1%{_extension} man_nvidiaxconfig%{_extension} %{_mandir}/man1/alt-%{drivername}-xconfig.1%{_extension} \
+    --slave %{_mandir}/man1/nvidia-smi.1%{_extension} nvidia-smi.1%{_extension} %{_mandir}/man1/alt-%{drivername}-smi.1%{_extension} \
+    --slave %{_datadir}/applications/mageia-nvidia-settings.desktop nvidia_desktop %{_datadir}/%{drivername}/mageia-nvidia-settings.desktop \
+    --slave %{_bindir}/nvidia-settings nvidia_settings %{nvidia_bindir}/nvidia-settings \
+    --slave %{_bindir}/nvidia-smi nvidia_smi %{nvidia_bindir}/nvidia-smi \
+    --slave %{_bindir}/nvidia-xconfig nvidia_xconfig %{nvidia_bindir}/nvidia-xconfig \
+    --slave %{_bindir}/nvidia-debugdump nvidia-debugdump %{nvidia_bindir}/nvidia-debugdump \
+    --slave %{_bindir}/nvidia-bug-report.sh nvidia_bug_report %{nvidia_bindir}/nvidia-bug-report.sh \
+    --slave %{_sysconfdir}/X11/XvMCConfig xvmcconfig %{_sysconfdir}/%{drivername}/XvMCConfig \
+    --slave %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit nvidia-settings.xinit %{_sysconfdir}/%{drivername}/nvidia-settings.xinit \
+    --slave %{_libdir}/vdpau/libvdpau_nvidia.so.1 %{_lib}vdpau_nvidia.so.1 %{nvidia_libdir}/vdpau/libvdpau_nvidia.so.%{version} \
+    --slave %{_sysconfdir}/modprobe.d/display-driver.conf display-driver.conf %{_sysconfdir}/%{drivername}/modprobe.conf \
+    --slave %{_sysconfdir}/OpenCL/vendors/nvidia.icd nvidia.icd %{_sysconfdir}/%{drivername}/nvidia.icd \
+%ifarch %{biarches}
+    --slave %{_prefix}/lib/vdpau/libvdpau_nvidia.so.1 libvdpau_nvidia.so.1 %{nvidia_libdir32}/vdpau/libvdpau_nvidia.so.%{version} \
 %endif
-%if %{mdkversion} <= 200800
-	--slave %{_libdir}/xorg/modules/libwfb.so libwfb %{_libdir}/xorg/modules/libnvidia-wfb.so.%{version} \
-%endif
-%if %{mdkversion} >= 200710
-	--slave %{_sysconfdir}/modprobe.d/display-driver.conf display-driver.conf %{_sysconfdir}/%{drivername}/modprobe.conf \
-%if %{mdkversion} < 201100
-	--slave %{_sysconfdir}/modprobe.preload.d/display-driver display-driver.preload %{_sysconfdir}/%{drivername}/modprobe.preload \
-%endif
-%endif
-%if %{mdkversion} >= 200910
-	--slave %{xorg_extra_modules} xorg_extra_modules %{nvidia_extensionsdir} \
-%else
-	--slave %{_libdir}/xorg/modules/libnvidia-wfb.so.1 nvidia_wfb %{nvidia_modulesdir}/libnvidia-wfb.so.%{version} \
-%if %{mdkversion} >= 200900
-	--slave %{_libdir}/xorg/modules/extensions/libdri.so libdri.so %{_libdir}/xorg/modules/extensions/standard/libdri.so \
-%endif
-%if %{mdkversion} >= 200800
-	--slave %{_libdir}/xorg/modules/extensions/libglx.so libglx %{nvidia_extensionsdir}/libglx.so
-%endif
-%endif
+    --slave %{xorg_extra_modules} xorg_extra_modules %{nvidia_extensionsdir} \
 
-%if %{mdkversion} >= 200800 && %{mdkversion} <= 200810
 if [ "${current_glconf}" = "%{_sysconfdir}/nvidia97xx/ld.so.conf" ]; then
-	# Adapt for the renaming of the driver. X.org config still has the old ModulePaths
-	# but they do not matter as we are using alternatives for libglx.so now.
-	%{_sbindir}/update-alternatives --set gl_conf %{ld_so_conf_dir}/%{ld_so_conf_file}
+    # Adapt for the renaming of the driver. X.org config still has the old ModulePaths
+    # but they do not matter as we are using alternatives for libglx.so now.
+    %{_sbindir}/update-alternatives --set gl_conf %{_sysconfdir}/%{drivername}/ld.so.conf
 fi
-%endif
-# empty line so that /sbin/ldconfig is not passed to update-alternatives
-%endif
 # explicit /sbin/ldconfig due to alternatives
 /sbin/ldconfig -X
 
-%if %{mdkversion} < 200900
-%update_menus
+%if "%{ldetect_cards_name}" != ""
+[ -x %{_sbindir}/update-ldetect-lst ] && %{_sbindir}/update-ldetect-lst || :
 %endif
 
 %postun -n %{driverpkgname}
-%if %{mdkversion} >= 200700
-if [ ! -f %{ld_so_conf_dir}/%{ld_so_conf_file} ]; then
-  %{_sbindir}/update-alternatives --remove gl_conf %{ld_so_conf_dir}/%{ld_so_conf_file}
+if [ ! -f %{_sysconfdir}/%{drivername}/ld.so.conf ]; then
+  %{_sbindir}/update-alternatives --remove gl_conf %{_sysconfdir}/%{drivername}/ld.so.conf
 fi
-%endif
 # explicit /sbin/ldconfig due to alternatives
 /sbin/ldconfig -X
 
-%if %{mdkversion} < 200900
-%clean_menus
+%if "%{ldetect_cards_name}" != ""
+[ -x %{_sbindir}/update-ldetect-lst ] && %{_sbindir}/update-ldetect-lst || :
 %endif
+
+%post -n %{drivername}-cuda-opencl
+# explicit /sbin/ldconfig due to a non-standard library directory
+/sbin/ldconfig -X
 
 %post -n dkms-%{drivername}
 /usr/sbin/dkms --rpm_safe_upgrade add -m %{drivername} -v %{version}-%{release} &&
@@ -908,7 +791,6 @@ rmmod nvidia > /dev/null 2>&1 || true
 # rmmod any old driver if present and not in use (e.g. by X)
 rmmod nvidia > /dev/null 2>&1 || true
 
-
 %files -n %{driverpkgname}
 %doc README.install.urpmi README.manual-setup
 
@@ -920,14 +802,8 @@ rmmod nvidia > /dev/null 2>&1 || true
 %ghost %{_sysconfdir}/ld.so.conf.d/GL.conf
 %ghost %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
 %ghost %{_sysconfdir}/modprobe.d/display-driver.conf
-%if %{mdkversion} < 201100
-%ghost %{_sysconfdir}/modprobe.preload.d/display-driver
-%endif
 %dir %{_sysconfdir}/%{drivername}
 %{_sysconfdir}/%{drivername}/modprobe.conf
-%if %{mdkversion} < 201100
-%{_sysconfdir}/%{drivername}/modprobe.preload
-%endif
 %{_sysconfdir}/%{drivername}/ld.so.conf
 %{_sysconfdir}/%{drivername}/XvMCConfig
 %{_sysconfdir}/%{drivername}/nvidia-settings.xinit
@@ -1064,4 +940,3 @@ rmmod nvidia > /dev/null 2>&1 || true
 %{nvidia_libdir32}/libcuda.so.1
 %endif
 %endif
-
