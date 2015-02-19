@@ -114,7 +114,7 @@ x11-driver-video-nvidia-current on 2008, nvidia97xx on 2007.1, and
 nvidia on 2007.0 and earlier.
 
 %package -n %{driverpkgname}
-Summary:	NVIDIA proprietary X.org driver and libraries for %cards
+Summary:	NVIDIA proprietary X.org driver and libraries, 304.xx series
 Group:		System/Kernel and hardware
 # Older alternatives implementations were buggy in various ways:
 Requires(post):	update-alternatives >= 1.9.0
