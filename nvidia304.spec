@@ -229,7 +229,7 @@ PACKAGE_VERSION="%{version}-%{release}"
 BUILT_MODULE_NAME[0]="nvidia"
 DEST_MODULE_LOCATION[0]="/kernel/drivers/char/drm"
 DEST_MODULE_NAME[0]="%{modulename}"
-MAKE[0]="make SYSSRC=\${kernel_source_dir} module"
+MAKE[0]="make CC=gcc SYSSRC=\${kernel_source_dir} module"
 CLEAN="make -f Makefile.kbuild clean"
 AUTOINSTALL="yes"
 EOF
