@@ -14,7 +14,7 @@
 %if !%simple
 # When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
 %define version 304.125
-%define rel 1
+%define rel 2
 # the highest supported videodrv abi
 %define videodrv_abi 19
 %endif
@@ -92,6 +92,8 @@ Source100:	nvidia304.rpmlintrc
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3:		nvidia-settings-include-xf86vmproto.patch
+Patch4:		NVIDIA-Linux-x86_64-304.125-kernel-3.18.patch
+PAtch5:		NVIDIA-Linux-x86_64-304.125-kernel-3.19.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -202,6 +204,13 @@ cd nvidia-settings-%{version}
 %patch3 -p1
 cd ..
 sh %{nsource} --extract-only
+
+%if !%simple
+cd %{pkgname}
+%patch4 -p1
+%patch5 -p1
+cd ..
+%endif
 
 rm -rf %{pkgname}/usr/src/nv/precompiled
 
