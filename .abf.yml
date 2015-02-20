@@ -1,8 +1,5 @@
-removed_sources:
-  nvidia-settings-304.88.tar.bz2: 6f70ee25e3facc2f91497db3defd9f6d9e2d31dd
-  nvidia-xconfig-304.88.tar.bz2: 6fecdc1e98ad3d54ff273827cee5770c25236c22
 sources:
-  NVIDIA-Linux-x86-304.121.run: ac8a7a174552f572acdd00e1d01110a5a848ae25
-  NVIDIA-Linux-x86_64-304.121.run: 337d3fec475ff6ed6306eea6ac167100c9191746
-  nvidia-settings-304.121.tar.bz2: 6a5622ec2e41743b2b284c98465bf0d9a96e0576
-  nvidia-xconfig-304.121.tar.bz2: cb4249e8d326d8f710100d9ac68416b4cc299ba2
+  NVIDIA-Linux-x86-304.125.run: 99c9a8819595ee0f2caf045ed05b02803e3527ff
+  NVIDIA-Linux-x86_64-304.125.run: 45f292f7612dcafac46332a4d884e866871cb6d2
+  nvidia-settings-304.125.tar.bz2: f02a45f93a25dbae84da8b8869ef31ad0d0ec7bf
+  nvidia-xconfig-304.125.tar.bz2: 66517c90c70d1aac2a43467c31cbe4941c76fc44
