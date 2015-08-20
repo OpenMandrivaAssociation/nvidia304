@@ -93,7 +93,8 @@ Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
 # include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
 Patch3:		nvidia-settings-include-xf86vmproto.patch
 Patch4:		NVIDIA-Linux-x86_64-304.125-kernel-3.18.patch
-PAtch5:		NVIDIA-Linux-x86_64-304.125-kernel-3.19.patch
+Patch5:		NVIDIA-Linux-x86_64-304.125-kernel-3.19.patch
+Patch6:		NVIDIA-Linux-x86_64-304.125-kernel-4.0.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -209,6 +210,7 @@ sh %{nsource} --extract-only
 cd %{pkgname}
 %patch4 -p1
 %patch5 -p1
+%patch6 -p1
 cd ..
 %endif
 
