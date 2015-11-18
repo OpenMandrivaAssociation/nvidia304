@@ -90,11 +90,6 @@ Source4:	nvidia-mdvbuild-skel
 Source100:	nvidia304.rpmlintrc
 # https://qa.mandriva.com/show_bug.cgi?id=39921
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
-# include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
-Patch3:		nvidia-settings-include-xf86vmproto.patch
-Patch4:		NVIDIA-Linux-x86_64-304.125-kernel-3.18.patch
-Patch5:		NVIDIA-Linux-x86_64-304.125-kernel-3.19.patch
-Patch6:		NVIDIA-Linux-x86_64-304.125-kernel-4.0.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -208,9 +203,6 @@ sh %{nsource} --extract-only
 
 %if !%simple
 cd %{pkgname}
-%patch4 -p1
-%patch5 -p1
-%patch6 -p1
 cd ..
 %endif
 
