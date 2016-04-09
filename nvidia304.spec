@@ -14,7 +14,7 @@
 %if !%simple
 # When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
 %define version 304.131
-%define rel 1
+%define rel 2
 # the highest supported videodrv abi
 %define videodrv_abi 19
 %endif
@@ -90,6 +90,8 @@ Source4:	nvidia-mdvbuild-skel
 Source100:	nvidia304.rpmlintrc
 # https://qa.mandriva.com/show_bug.cgi?id=39921
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
+# arch - fix install of module on kernel 4.3+
+Patch2:		disable-mtrr.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -197,9 +199,12 @@ HTML version of the README.txt file provided in package
 %setup -q -c -T -a 2 -a 3
 cd nvidia-settings-%{version}
 %patch1 -p1
-%patch3 -p1
 cd ..
 sh %{nsource} --extract-only
+
+pushd %pkgname/kernel
+%patch2 -p1
+popd
 
 %if !%simple
 cd %{pkgname}
