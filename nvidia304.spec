@@ -13,7 +13,7 @@
 
 %if !%simple
 # When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
-%define version 304.125
+%define version 304.131
 %define rel 1
 # the highest supported videodrv abi
 %define videodrv_abi 19
@@ -90,8 +90,6 @@ Source4:	nvidia-mdvbuild-skel
 Source100:	nvidia304.rpmlintrc
 # https://qa.mandriva.com/show_bug.cgi?id=39921
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
-# include xf86vmproto for X_XF86VidModeGetGammaRampSize, fixes build on cooker
-Patch3:		nvidia-settings-include-xf86vmproto.patch
 
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
@@ -203,6 +201,11 @@ cd nvidia-settings-%{version}
 cd ..
 sh %{nsource} --extract-only
 
+%if !%simple
+cd %{pkgname}
+cd ..
+%endif
+
 rm -rf %{pkgname}/usr/src/nv/precompiled
 
 %if %simple
@@ -220,7 +223,7 @@ PACKAGE_VERSION="%{version}-%{release}"
 BUILT_MODULE_NAME[0]="nvidia"
 DEST_MODULE_LOCATION[0]="/kernel/drivers/char/drm"
 DEST_MODULE_NAME[0]="%{modulename}"
-MAKE[0]="make SYSSRC=\${kernel_source_dir} module"
+MAKE[0]="make CC=gcc SYSSRC=\${kernel_source_dir} module"
 CLEAN="make -f Makefile.kbuild clean"
 AUTOINSTALL="yes"
 EOF
