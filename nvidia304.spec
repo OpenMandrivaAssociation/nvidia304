@@ -13,8 +13,8 @@
 
 %if !%simple
 # When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
-%define version 304.131
-%define rel 2
+%define version 304.132
+%define rel 1
 # the highest supported videodrv abi
 %define videodrv_abi 19
 %endif
@@ -673,8 +673,6 @@ echo "%{nvidia_libdir}" > %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %ifarch %{biarches}
 echo "%{nvidia_libdir32}" >> %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %endif
-install -d -m755 %{buildroot}%{_sysconfdir}/ld.so.conf.d
-touch %{buildroot}%{_sysconfdir}/ld.so.conf.d/GL.conf
 
 # modprobe.conf
 install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.d
@@ -811,7 +809,6 @@ rmmod nvidia > /dev/null 2>&1 || true
 %endif
 
 # ld.so.conf, modprobe.conf, xvmcconfig, xinit
-%ghost %{_sysconfdir}/ld.so.conf.d/GL.conf
 %ghost %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
 %ghost %{_sysconfdir}/modprobe.d/display-driver.conf
 %dir %{_sysconfdir}/%{drivername}
