@@ -13,10 +13,10 @@
 
 %if !%simple
 # When updating, please add new ids to ldetect-lst (merge2pcitable.pl)
-%define version 304.131
+%define version 304.134
 %define rel 2
 # the highest supported videodrv abi
-%define videodrv_abi 19
+%define videodrv_abi 23
 %endif
 
 %define priority 9630
@@ -92,7 +92,7 @@ Source100:	nvidia304.rpmlintrc
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
 # arch - fix install of module on kernel 4.3+
 Patch2:		disable-mtrr.patch
-
+Patch3:		nvidia-kernel-4.9.0.patch
 License:	Freeware
 URL:		http://www.nvidia.com/object/unix.html
 Group:		System/Kernel and hardware
@@ -208,6 +208,7 @@ popd
 
 %if !%simple
 cd %{pkgname}
+%patch3 -p0
 cd ..
 %endif
 
@@ -673,8 +674,6 @@ echo "%{nvidia_libdir}" > %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %ifarch %{biarches}
 echo "%{nvidia_libdir32}" >> %{buildroot}%{_sysconfdir}/%{drivername}/ld.so.conf
 %endif
-install -d -m755 %{buildroot}%{_sysconfdir}/ld.so.conf.d
-touch %{buildroot}%{_sysconfdir}/ld.so.conf.d/GL.conf
 
 # modprobe.conf
 install -d -m755 %{buildroot}%{_sysconfdir}/modprobe.d
@@ -811,7 +810,6 @@ rmmod nvidia > /dev/null 2>&1 || true
 %endif
 
 # ld.so.conf, modprobe.conf, xvmcconfig, xinit
-%ghost %{_sysconfdir}/ld.so.conf.d/GL.conf
 %ghost %{_sysconfdir}/X11/xinit.d/nvidia-settings.xinit
 %ghost %{_sysconfdir}/modprobe.d/display-driver.conf
 %dir %{_sysconfdir}/%{drivername}
