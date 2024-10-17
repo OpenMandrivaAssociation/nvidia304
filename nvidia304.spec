@@ -92,7 +92,7 @@ Source100:	nvidia304.rpmlintrc
 Patch1:		nvidia-settings-enable-dyntwinview-mdv.patch
 Patch4:		NVIDIA-Linux-x86_64-304.137-kernel-4.14.patch
 License:	Freeware
-URL:		http://www.nvidia.com/object/unix.html
+URL:		https://www.nvidia.com/object/unix.html
 Group:		System/Kernel and hardware
 ExclusiveArch:	%{ix86} x86_64
 BuildRequires:	imagemagick
