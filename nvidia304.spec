@@ -95,6 +95,7 @@ License:	Freeware
 URL:		https://www.nvidia.com/object/unix.html
 Group:		System/Kernel and hardware
 ExclusiveArch:	%{ix86} x86_64
+BuildRequires:	make
 BuildRequires:	imagemagick
 BuildRequires:	pkgconfig(gtk+-x11-2.0)
 BuildRequires:	pkgconfig(xxf86vm)
